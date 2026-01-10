@@ -270,8 +270,6 @@ This project is created for educational purposes as part of OFPPT Mobile Develop
 
 ## 👥 Contributors
 
-- [Your Name]
-- Instructor: nizar.ettaheri@ofppt.ma
 
 ## 📞 Support
 
