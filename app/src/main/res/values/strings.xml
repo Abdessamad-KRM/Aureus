@@ -34,4 +34,7 @@
     <string name="notification_transaction_title">New Transaction</string>
     <string name="notification_low_balance_title">Low Balance Alert</string>
     <string name="notification_info_title">Information</string>
+
+    <!-- Google Sign-In - Remplacer par votre propre ID client Web depuis Firebase Console -->
+    <string name="default_web_client_id">437186810132-mnnu9vei8sf7jivuuh8t6o9b71ldinal.apps.googleusercontent.com</string>
 </resources>

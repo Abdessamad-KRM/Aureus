@@ -84,6 +84,7 @@ fun DashboardScreen(
 
             // Accounts List
             when (accountsState) {
+                Resource.Idle,
                 is Resource.Loading -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
@@ -109,7 +110,7 @@ fun DashboardScreen(
                             items(accounts) { account ->
                                 AccountItem(
                                     account = account,
-                                    onClick = { onAccountClick(account.id) }
+                                    onClick = { onAccountClick(account.accountNumber) }
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                             }

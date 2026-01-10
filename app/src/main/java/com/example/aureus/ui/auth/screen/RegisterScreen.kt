@@ -1,6 +1,7 @@
 package com.example.aureus.ui.auth.screen
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -9,6 +10,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
@@ -25,24 +27,31 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.aureus.domain.model.Resource
+import com.example.aureus.ui.auth.model.Country
+import com.example.aureus.ui.auth.model.countries
 import com.example.aureus.ui.auth.viewmodel.AuthViewModel
-import com.example.aureus.ui.theme.AureusTheme
+import com.example.aureus.ui.components.CompactQuickLoginButtons
+import com.example.aureus.ui.theme.*
 
 /**
  * Register Screen - Modern Prestige Design
+ * Avec Quick Login Buttons
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(
     viewModel: AuthViewModel,
-    onRegisterSuccess: () -> Unit,
-    onNavigateToLogin: () -> Unit
+    onRegisterSuccess: (phoneNumber: String) -> Unit,
+    onNavigateToLogin: () -> Unit,
+    storedAccounts: List<Map<String, String>> = emptyList()
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var firstName by remember { mutableStateOf("") }
     var lastName by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
+    var selectedCountry by remember { mutableStateOf(countries.first()) }
+    var isCountryDropdownExpanded by remember { mutableStateOf(false) }
 
     var emailError by remember { mutableStateOf<String?>(null) }
     var passwordError by remember { mutableStateOf<String?>(null) }
@@ -55,14 +64,25 @@ fun RegisterScreen(
     // Navigate on successful registration
     LaunchedEffect(registerState) {
         if (registerState is Resource.Success) {
-            onRegisterSuccess()
+            val fullPhone = if (phone.isNotBlank()) {
+                "${selectedCountry.dialCode}${phone.filter { it.isDigit() }}"
+            } else ""
+            onRegisterSuccess(fullPhone)
         }
+    }
+
+    // Auto-fill from Quick Login Buttons
+    val handleQuickLogin = { quickEmail: String, quickPassword: String ->
+        email = quickEmail
+        password = quickPassword
+        emailError = null
+        passwordError = null
     }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(NeutralLightGray)
     ) {
         // Back button
         IconButton(
@@ -74,7 +94,7 @@ fun RegisterScreen(
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = "Back",
-                tint = MaterialTheme.colorScheme.onBackground
+                tint = PrimaryNavyBlue
             )
         }
 
@@ -82,7 +102,7 @@ fun RegisterScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(scrollState)
-                .padding(horizontal = 32.dp)
+                .padding(horizontal = 24.dp)
                 .padding(top = 80.dp, bottom = 32.dp),
             horizontalAlignment = Alignment.Start
         ) {
@@ -93,16 +113,24 @@ fun RegisterScreen(
                     fontWeight = FontWeight.Bold,
                     fontSize = 36.sp
                 ),
-                color = MaterialTheme.colorScheme.onBackground
+                color = PrimaryNavyBlue
             )
 
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Créez votre compte Aureus",
+                style = MaterialTheme.typography.bodyMedium,
+                color = NeutralMediumGray
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
 
             // Full Name
             Text(
                 text = "Full Name",
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray,
+                color = NeutralMediumGray,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
@@ -120,7 +148,7 @@ fun RegisterScreen(
                     Icon(
                         imageVector = Icons.Default.Person,
                         contentDescription = null,
-                        tint = Color.Gray
+                        tint = NeutralMediumGray
                     )
                 },
                 isError = firstNameError != null || lastNameError != null,
@@ -129,53 +157,126 @@ fun RegisterScreen(
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = Color.LightGray,
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White
+                    focusedBorderColor = SecondaryGold,
+                    unfocusedBorderColor = NeutralMediumGray.copy(alpha = 0.5f),
+                    focusedContainerColor = NeutralWhite,
+                    unfocusedContainerColor = NeutralWhite
                 )
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             // Phone Number
             Text(
                 text = "Phone Number",
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray,
+                color = NeutralMediumGray,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
-            OutlinedTextField(
-                value = phone,
-                onValueChange = { phone = it },
-                placeholder = { Text("+8801712663389", color = Color.Gray) },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Phone,
-                        contentDescription = null,
-                        tint = Color.Gray
-                    )
-                },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+            // Country Selector + Phone Number
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = Color.LightGray,
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White
-                )
-            )
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Country Selector Dropdown
+                Box(
+                    modifier = Modifier.width(120.dp)
+                ) {
+                    OutlinedTextField(
+                        value = "${selectedCountry.flag} ${selectedCountry.dialCode}",
+                        onValueChange = { },
+                        readOnly = true,
+                        placeholder = { Text("Country", color = Color.Gray) },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Phone,
+                                contentDescription = null,
+                                tint = NeutralMediumGray,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        },
+                        trailingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.KeyboardArrowDown,
+                                contentDescription = "Select Country",
+                                tint = NeutralMediumGray
+                            )
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = SecondaryGold,
+                            unfocusedBorderColor = NeutralMediumGray.copy(alpha = 0.5f),
+                            focusedContainerColor = NeutralWhite,
+                            unfocusedContainerColor = NeutralWhite
+                        ),
+                        textStyle = MaterialTheme.typography.bodyMedium
+                    )
 
-            Spacer(modifier = Modifier.height(24.dp))
+                    // Dropdown Menu
+                    DropdownMenu(
+                        expanded = isCountryDropdownExpanded,
+                        onDismissRequest = { isCountryDropdownExpanded = false },
+                        modifier = Modifier
+                            .height(300.dp)
+                            .background(NeutralWhite)
+                    ) {
+                        countries.forEach { country ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        text = "${country.flag} ${country.name} (${country.dialCode})",
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                },
+                                onClick = {
+                                    selectedCountry = country
+                                    isCountryDropdownExpanded = false
+                                }
+                            )
+                        }
+                    }
+
+                    // Invisible click area for dropdown
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .background(Color.Transparent)
+                            .clickable { isCountryDropdownExpanded = !isCountryDropdownExpanded }
+                    )
+                }
+
+                // Phone Number Input
+                OutlinedTextField(
+                    value = phone,
+                    onValueChange = { phone = it },
+                    placeholder = { Text("6XX XXX XXX", color = Color.Gray) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(56.dp),
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = SecondaryGold,
+                        unfocusedBorderColor = NeutralMediumGray.copy(alpha = 0.5f),
+                        focusedContainerColor = NeutralWhite,
+                        unfocusedContainerColor = NeutralWhite
+                    )
+                )
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
 
             // Email Address
             Text(
                 text = "Email Address",
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray,
+                color = NeutralMediumGray,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
@@ -185,12 +286,12 @@ fun RegisterScreen(
                     email = it
                     emailError = null
                 },
-                placeholder = { Text("tanya myroniuk@gmail.com", color = Color.Gray) },
+                placeholder = { Text("your@email.com", color = Color.Gray) },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Email,
                         contentDescription = null,
-                        tint = Color.Gray
+                        tint = NeutralMediumGray
                     )
                 },
                 isError = emailError != null,
@@ -199,20 +300,20 @@ fun RegisterScreen(
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = Color.LightGray,
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White
+                    focusedBorderColor = SecondaryGold,
+                    unfocusedBorderColor = NeutralMediumGray.copy(alpha = 0.5f),
+                    focusedContainerColor = NeutralWhite,
+                    unfocusedContainerColor = NeutralWhite
                 )
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             // Password
             Text(
                 text = "Password",
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray,
+                color = NeutralMediumGray,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
@@ -227,7 +328,7 @@ fun RegisterScreen(
                     Icon(
                         imageVector = Icons.Default.Lock,
                         contentDescription = null,
-                        tint = Color.Gray
+                        tint = NeutralMediumGray
                     )
                 },
                 isError = passwordError != null,
@@ -237,14 +338,25 @@ fun RegisterScreen(
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = Color.LightGray,
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White
+                    focusedBorderColor = SecondaryGold,
+                    unfocusedBorderColor = NeutralMediumGray.copy(alpha = 0.5f),
+                    focusedContainerColor = NeutralWhite,
+                    unfocusedContainerColor = NeutralWhite
                 )
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Quick Login Buttons
+            if (storedAccounts.isNotEmpty()) {
+                CompactQuickLoginButtons(
+                    accounts = storedAccounts,
+                    onAccountClick = { e, p -> handleQuickLogin(e, p) },
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Sign Up Button
             Button(
@@ -261,12 +373,15 @@ fun RegisterScreen(
                         passwordError = p
                     }
                     if (isValid) {
+                        val fullPhone = if (phone.isNotBlank()) {
+                            "${selectedCountry.dialCode}$phone"
+                        } else null
                         viewModel.register(
                             email = email,
                             password = password,
                             firstName = firstName,
                             lastName = lastName,
-                            phone = phone.ifBlank { null }
+                            phone = fullPhone
                         )
                     }
                 },
@@ -276,21 +391,22 @@ fun RegisterScreen(
                     .height(56.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = Color.White
+                    containerColor = PrimaryNavyBlue,
+                    contentColor = NeutralWhite
                 )
             ) {
                 if (registerState is Resource.Loading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
-                        color = Color.White
+                        color = NeutralWhite
                     )
                 } else {
                     Text(
                         text = "Sign Up",
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.SemiBold
-                        )
+                        ),
+                        color = NeutralWhite
                     )
                 }
             }
@@ -305,18 +421,18 @@ fun RegisterScreen(
                 Text(
                     text = "Already have an account. ",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Gray
+                    color = NeutralMediumGray
                 )
                 TextButton(
                     onClick = onNavigateToLogin,
                     contentPadding = PaddingValues(0.dp)
                 ) {
                     Text(
-                        text = "Sign Up",
+                        text = "Sign In",
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontWeight = FontWeight.SemiBold
                         ),
-                        color = MaterialTheme.colorScheme.primary
+                        color = PrimaryNavyBlue
                     )
                 }
             }
@@ -325,7 +441,7 @@ fun RegisterScreen(
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     text = (registerState as Resource.Error).message,
-                    color = MaterialTheme.colorScheme.error,
+                    color = SemanticRed,
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 )
@@ -353,14 +469,18 @@ private fun validateInput(
 fun RegisterScreenContent(
     onRegisterClick: (String, String, String, String, String?) -> Unit = { _, _, _, _, _ -> },
     onNavigateToLogin: () -> Unit = {},
+    onRegisterSuccess: (phoneNumber: String) -> Unit = {},
     isLoading: Boolean = false,
-    errorMessage: String? = null
+    errorMessage: String? = null,
+    storedAccounts: List<Map<String, String>> = emptyList()
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var firstName by remember { mutableStateOf("") }
     var lastName by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
+    var selectedCountry by remember { mutableStateOf(countries.first()) }
+    var isCountryDropdownExpanded by remember { mutableStateOf(false) }
 
     var emailError by remember { mutableStateOf<String?>(null) }
     var passwordError by remember { mutableStateOf<String?>(null) }
@@ -369,10 +489,23 @@ fun RegisterScreenContent(
 
     val scrollState = rememberScrollState()
 
+    // Auto-fill from Quick Login Buttons
+    val handleQuickLogin = { quickEmail: String, quickPassword: String ->
+        email = quickEmail
+        password = quickPassword
+        emailError = null
+        passwordError = null
+    }
+
+    // On register success callback
+    LaunchedEffect(Unit) {
+        // On trigger the success callback when needed after registration
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(NeutralLightGray)
     ) {
         // Back button
         IconButton(
@@ -384,7 +517,7 @@ fun RegisterScreenContent(
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = "Back",
-                tint = MaterialTheme.colorScheme.onBackground
+                tint = PrimaryNavyBlue
             )
         }
 
@@ -392,7 +525,7 @@ fun RegisterScreenContent(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(scrollState)
-                .padding(horizontal = 32.dp)
+                .padding(horizontal = 24.dp)
                 .padding(top = 80.dp, bottom = 32.dp),
             horizontalAlignment = Alignment.Start
         ) {
@@ -403,16 +536,24 @@ fun RegisterScreenContent(
                     fontWeight = FontWeight.Bold,
                     fontSize = 36.sp
                 ),
-                color = MaterialTheme.colorScheme.onBackground
+                color = PrimaryNavyBlue
             )
 
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Créez votre compte Aureus",
+                style = MaterialTheme.typography.bodyMedium,
+                color = NeutralMediumGray
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
 
             // Full Name
             Text(
                 text = "Full Name",
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray,
+                color = NeutralMediumGray,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
@@ -430,7 +571,7 @@ fun RegisterScreenContent(
                     Icon(
                         imageVector = Icons.Default.Person,
                         contentDescription = null,
-                        tint = Color.Gray
+                        tint = NeutralMediumGray
                     )
                 },
                 isError = firstNameError != null || lastNameError != null,
@@ -439,53 +580,126 @@ fun RegisterScreenContent(
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = Color.LightGray,
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White
+                    focusedBorderColor = SecondaryGold,
+                    unfocusedBorderColor = NeutralMediumGray.copy(alpha = 0.5f),
+                    focusedContainerColor = NeutralWhite,
+                    unfocusedContainerColor = NeutralWhite
                 )
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             // Phone Number
             Text(
                 text = "Phone Number",
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray,
+                color = NeutralMediumGray,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
-            OutlinedTextField(
-                value = phone,
-                onValueChange = { phone = it },
-                placeholder = { Text("+8801712663389", color = Color.Gray) },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Phone,
-                        contentDescription = null,
-                        tint = Color.Gray
-                    )
-                },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+            // Country Selector + Phone Number
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = Color.LightGray,
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White
-                )
-            )
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Country Selector Dropdown
+                Box(
+                    modifier = Modifier.width(120.dp)
+                ) {
+                    OutlinedTextField(
+                        value = "${selectedCountry.flag} ${selectedCountry.dialCode}",
+                        onValueChange = { },
+                        readOnly = true,
+                        placeholder = { Text("Country", color = Color.Gray) },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Phone,
+                                contentDescription = null,
+                                tint = NeutralMediumGray,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        },
+                        trailingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.KeyboardArrowDown,
+                                contentDescription = "Select Country",
+                                tint = NeutralMediumGray
+                            )
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = SecondaryGold,
+                            unfocusedBorderColor = NeutralMediumGray.copy(alpha = 0.5f),
+                            focusedContainerColor = NeutralWhite,
+                            unfocusedContainerColor = NeutralWhite
+                        ),
+                        textStyle = MaterialTheme.typography.bodyMedium
+                    )
 
-            Spacer(modifier = Modifier.height(24.dp))
+                    // Dropdown Menu
+                    DropdownMenu(
+                        expanded = isCountryDropdownExpanded,
+                        onDismissRequest = { isCountryDropdownExpanded = false },
+                        modifier = Modifier
+                            .height(300.dp)
+                            .background(NeutralWhite)
+                    ) {
+                        countries.forEach { country ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        text = "${country.flag} ${country.name} (${country.dialCode})",
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                },
+                                onClick = {
+                                    selectedCountry = country
+                                    isCountryDropdownExpanded = false
+                                }
+                            )
+                        }
+                    }
+
+                    // Invisible click area for dropdown
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .background(Color.Transparent)
+                            .clickable { isCountryDropdownExpanded = !isCountryDropdownExpanded }
+                    )
+                }
+
+                // Phone Number Input
+                OutlinedTextField(
+                    value = phone,
+                    onValueChange = { phone = it },
+                    placeholder = { Text("6XX XXX XXX", color = Color.Gray) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(56.dp),
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = SecondaryGold,
+                        unfocusedBorderColor = NeutralMediumGray.copy(alpha = 0.5f),
+                        focusedContainerColor = NeutralWhite,
+                        unfocusedContainerColor = NeutralWhite
+                    )
+                )
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
 
             // Email Address
             Text(
                 text = "Email Address",
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray,
+                color = NeutralMediumGray,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
@@ -495,12 +709,12 @@ fun RegisterScreenContent(
                     email = it
                     emailError = null
                 },
-                placeholder = { Text("tanya myroniuk@gmail.com", color = Color.Gray) },
+                placeholder = { Text("your@email.com", color = Color.Gray) },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Email,
                         contentDescription = null,
-                        tint = Color.Gray
+                        tint = NeutralMediumGray
                     )
                 },
                 isError = emailError != null,
@@ -509,20 +723,20 @@ fun RegisterScreenContent(
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = Color.LightGray,
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White
+                    focusedBorderColor = SecondaryGold,
+                    unfocusedBorderColor = NeutralMediumGray.copy(alpha = 0.5f),
+                    focusedContainerColor = NeutralWhite,
+                    unfocusedContainerColor = NeutralWhite
                 )
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             // Password
             Text(
                 text = "Password",
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray,
+                color = NeutralMediumGray,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
@@ -537,7 +751,7 @@ fun RegisterScreenContent(
                     Icon(
                         imageVector = Icons.Default.Lock,
                         contentDescription = null,
-                        tint = Color.Gray
+                        tint = NeutralMediumGray
                     )
                 },
                 isError = passwordError != null,
@@ -547,14 +761,25 @@ fun RegisterScreenContent(
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = Color.LightGray,
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White
+                    focusedBorderColor = SecondaryGold,
+                    unfocusedBorderColor = NeutralMediumGray.copy(alpha = 0.5f),
+                    focusedContainerColor = NeutralWhite,
+                    unfocusedContainerColor = NeutralWhite
                 )
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Quick Login Buttons
+            if (storedAccounts.isNotEmpty()) {
+                CompactQuickLoginButtons(
+                    accounts = storedAccounts,
+                    onAccountClick = { e, p -> handleQuickLogin(e, p) },
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Sign Up Button
             Button(
@@ -571,7 +796,10 @@ fun RegisterScreenContent(
                         passwordError = p
                     }
                     if (isValid) {
-                        onRegisterClick(email, password, firstName, lastName, phone.ifBlank { null })
+                        val fullPhone = if (phone.isNotBlank()) {
+                            "${selectedCountry.dialCode}$phone"
+                        } else null
+                        onRegisterClick(email, password, firstName, lastName, fullPhone)
                     }
                 },
                 enabled = !isLoading,
@@ -580,21 +808,22 @@ fun RegisterScreenContent(
                     .height(56.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = Color.White
+                    containerColor = PrimaryNavyBlue,
+                    contentColor = NeutralWhite
                 )
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
-                        color = Color.White
+                        color = NeutralWhite
                     )
                 } else {
                     Text(
                         text = "Sign Up",
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.SemiBold
-                        )
+                        ),
+                        color = NeutralWhite
                     )
                 }
             }
@@ -609,29 +838,34 @@ fun RegisterScreenContent(
                 Text(
                     text = "Already have an account. ",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Gray
+                    color = NeutralMediumGray
                 )
                 TextButton(
                     onClick = onNavigateToLogin,
                     contentPadding = PaddingValues(0.dp)
                 ) {
                     Text(
-                        text = "Sign Up",
+                        text = "Sign In",
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontWeight = FontWeight.SemiBold
                         ),
-                        color = MaterialTheme.colorScheme.primary
+                        color = PrimaryNavyBlue
                     )
                 }
             }
+        }
 
-            if (errorMessage != null) {
-                Spacer(modifier = Modifier.height(16.dp))
+        if (errorMessage != null) {
+            Box(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .align(Alignment.BottomCenter)
+            ) {
                 Text(
                     text = errorMessage,
-                    color = MaterialTheme.colorScheme.error,
+                    color = SemanticRed,
                     style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
             }
         }
@@ -642,7 +876,7 @@ fun RegisterScreenContent(
 @Composable
 fun RegisterScreenPreview() {
     AureusTheme {
-        RegisterScreenContent()
+        RegisterScreenContent(storedAccounts = emptyList())
     }
 }
 
@@ -650,6 +884,19 @@ fun RegisterScreenPreview() {
 @Composable
 fun RegisterScreenDarkPreview() {
     AureusTheme(darkTheme = true) {
-        RegisterScreenContent()
+        RegisterScreenContent(storedAccounts = emptyList())
+    }
+}
+
+@Preview(showBackground = true, showSystemUi = true, name = "Register Screen - With Quick Accounts")
+@Composable
+fun RegisterScreenWithAccountsPreview() {
+    AureusTheme {
+        RegisterScreenContent(
+            storedAccounts = listOf(
+                mapOf("email" to "user1@test.com", "password" to "pass123", "label" to "User 1"),
+                mapOf("email" to "user2@test.com", "password" to "pass456", "label" to "User 2")
+            )
+        )
     }
 }

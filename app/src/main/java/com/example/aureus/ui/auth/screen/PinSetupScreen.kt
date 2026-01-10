@@ -33,6 +33,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.aureus.data.firestore.PinFirestoreManager
+import com.example.aureus.domain.model.Resource
+import com.example.aureus.ui.auth.viewmodel.PinViewModel
 import com.example.aureus.ui.theme.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -45,27 +49,47 @@ import kotlinx.coroutines.launch
 @Composable
 fun PinSetupScreen(
     onPinSetupComplete: () -> Unit,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    viewModel: PinViewModel = hiltViewModel()
 ) {
     var currentStep by remember { mutableStateOf(PinSetupStep.CREATE) }
     var firstPin by remember { mutableStateOf("") }
     var confirmPin by remember { mutableStateOf("") }
     var isError by remember { mutableStateOf(false) }
     var isSuccess by remember { mutableStateOf(false) }
-    
+    var isSaving by remember { mutableStateOf(false) }
+
     val scope = rememberCoroutineScope()
     val haptic = LocalHapticFeedback.current
-    
+    val pinState by viewModel.pinState.collectAsState()
+
     // Get current PIN based on step
     val currentPin = when (currentStep) {
         PinSetupStep.CREATE -> firstPin
         PinSetupStep.CONFIRM -> confirmPin
     }
-    
+
+    // Navigate sur succès de sauvegarde
+    LaunchedEffect(pinState) {
+        if (pinState is Resource.Success) {
+            delay(500)
+            onPinSetupComplete()
+        }
+    }
+
+    // Afficher erreur de sauvegarde
+    LaunchedEffect(pinState) {
+        if (pinState is Resource.Error) {
+            isError = true
+            delay(1500)
+            isError = false
+        }
+    }
+
     // Handle PIN input
     fun onPinChange(newPin: String) {
         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-        
+
         when (currentStep) {
             PinSetupStep.CREATE -> {
                 firstPin = newPin
@@ -83,10 +107,9 @@ fun PinSetupScreen(
                         delay(300)
                         // Validate PINs match
                         if (firstPin == confirmPin) {
-                            isSuccess = true
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            delay(1500)
-                            onPinSetupComplete()
+                            // Sauvegarder le PIN dans Firestore
+                            isSaving = true
+                            viewModel.savePin(firstPin)
                         } else {
                             isError = true
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -195,16 +218,32 @@ fun PinSetupScreen(
                 // PIN Dots Display
                 PinDotsDisplay(
                     pinLength = currentPin.length,
-                    isError = isError,
-                    isSuccess = isSuccess
+                    isError = isError || (pinState is Resource.Error),
+                    isSuccess = isSuccess || (pinState is Resource.Success)
                 )
-                
-                // Success/Error Icons
-                AnimatedVisibility(
-                    visible = isSuccess,
-                    enter = fadeIn() + scaleIn(),
-                    exit = fadeOut() + scaleOut()
-                ) {
+
+                // Saving indicator
+                if (pinState is Resource.Loading) {
+                    Row(
+                        modifier = Modifier.padding(top = 24.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = SecondaryGold
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "Sauvegarde en cours...",
+                            color = NeutralWhite.copy(alpha = 0.8f),
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+
+                // Success message
+                if (isSuccess) {
                     Row(
                         modifier = Modifier.padding(top = 24.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -224,6 +263,17 @@ fun PinSetupScreen(
                             fontWeight = FontWeight.SemiBold
                         )
                     }
+                }
+
+                // Error message
+                if (pinState is Resource.Error && !isError) {
+                    Text(
+                        text = (pinState as Resource.Error).message,
+                        color = SemanticRed,
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(top = 16.dp),
+                        textAlign = TextAlign.Center
+                    )
                 }
             }
             

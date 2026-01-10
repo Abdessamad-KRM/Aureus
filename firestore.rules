@@ -1,0 +1,102 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ==================== FONCTIONS HELPER ====================
+
+    // Vérifier si l'utilisateur est authentifié
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Vérifier que l'utilisateur accède à ses propres données
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Vérifier que le document userId correspond à l'utilisateur connecté
+    function isUserIdOwner(userIdField) {
+      return isAuthenticated() && request.auth.uid == resource.data[userIdField] || request.auth.uid == request.resource.data[userIdField];
+    }
+
+    // ==================== USERS COLLECTION ====================
+
+    match /users/{userId} {
+      // Lecture: Seul le propriétaire peut lire
+      allow read: if isOwner(userId);
+
+      // Création: L'utilisateur doit être authentifié et créer son propre document
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+
+      // Mise à jour: Seul le propriétaire peut mettre à jour
+      allow update: if isOwner(userId);
+
+      // Suppression: Seul le propriétaire peut supprimer
+      allow delete: if isOwner(userId);
+
+      // Sous-collections (accounts, contacts, notifications, etc.)
+      match /{subcollection=**} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // ==================== ACCOUNTS COLLECTION ====================
+
+    match /accounts/{accountId} {
+      // Lecture: Le propriétaire du compte peut lire
+      allow read: if isUserIdOwner('userId');
+
+      // Création: L'utilisateur authentifié ne peut créer que pour lui-même
+      allow create: if isAuthenticated()
+                    && request.resource.data.userId == request.auth.uid;
+
+      // Mise à jour: Le propriétaire du compte peut mettre à jour
+      allow update: if isUserIdOwner('userId');
+
+      // Suppression: Le propriétaire du compte peut supprimer
+      allow delete: if isUserIdOwner('userId');
+    }
+
+    // ==================== CARDS COLLECTION ====================
+
+    match /cards/{cardId} {
+      // Lecture: Le propriétaire de la carte peut lire
+      allow read: if isUserIdOwner('userId');
+
+      // Création: L'utilisateur authentifié ne peut créer que pour lui-même
+      allow create: if isAuthenticated()
+                    && request.resource.data.userId == request.auth.uid;
+
+      // Mise à jour: Le propriétaire de la carte peut mettre à jour
+      allow update: if isUserIdOwner('userId');
+
+      // Suppression: Le propriétaire de la carte peut supprimer
+      allow delete: if isUserIdOwner('userId');
+    }
+
+    // ==================== TRANSACTIONS COLLECTION ====================
+
+    match /transactions/{transactionId} {
+      // Lecture: Le propriétaire de la transaction peut lire
+      allow read: if isUserIdOwner('userId');
+
+      // Création: L'utilisateur authentifié ne peut créer que pour lui-même
+      allow create: if isAuthenticated()
+                    && request.resource.data.userId == request.auth.uid;
+
+      // Mise à jour: Le propriétaire de la transaction peut mettre à jour
+      allow update: if isUserIdOwner('userId');
+
+      // Suppression: Le propriétaire de la transaction peut supprimer
+      // Note: En production, il pourrait être préférable de ne pas permettre la suppression
+      allow delete: if isUserIdOwner('userId');
+    }
+
+    // ==================== RULES PAR DÉFAUT ====================
+
+    // Tout accès non explicitement autorisé est refusé
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}

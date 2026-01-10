@@ -1,0 +1,100 @@
+rules_version = '2';
+
+// Règles de sécurité Firebase Storage pour Aureus Banking App
+// Mode Production - Sécurisé pour données bancaires
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // ==================== FONCTIONS HELPER ====================
+    
+    // Vérifier si l'utilisateur est authentifié
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Vérifier que l'utilisateur accède à ses propres données
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Vérifier la taille du fichier (max 5 MB pour images)
+    function isValidImageSize() {
+      return request.resource.size < 5 * 1024 * 1024;
+    }
+    
+    // Vérifier la taille du fichier (max 10 MB pour documents)
+    function isValidDocumentSize() {
+      return request.resource.size < 10 * 1024 * 1024;
+    }
+    
+    // Vérifier le type de fichier image
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+    
+    // Vérifier le type de fichier document
+    function isDocument() {
+      return request.resource.contentType.matches('image/.*') ||
+             request.resource.contentType.matches('application/pdf');
+    }
+    
+    // ==================== RÈGLES D'ACCÈS ====================
+    
+    // Images de profil
+    // - Lecture: Publique (pour afficher les profils dans l'app)
+    // - Écriture: Propriétaire uniquement + validation taille/type
+    match /profile_images/{userId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if isOwner(userId) && 
+                     isImage() && 
+                     isValidImageSize();
+    }
+    
+    // Reçus de transactions
+    // - Lecture/Écriture: UNIQUEMENT le propriétaire
+    // - Support images et PDF
+    match /receipts/{userId}/{transactionId}/{allPaths=**} {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId) && 
+                     isDocument() && 
+                     isValidDocumentSize();
+    }
+    
+    // Documents KYC (Know Your Customer)
+    // - Accès strictement privé
+    // - Pour vérification d'identité
+    match /kyc/{userId}/{allPaths=**} {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId) && 
+                     isDocument() && 
+                     isValidDocumentSize();
+    }
+    
+    // Cartes bancaires (photos recto/verso pour ajout manuel)
+    // - Accès ultra-sécurisé
+    // - Données sensibles
+    match /cards/{userId}/{cardId}/{allPaths=**} {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId) && 
+                     isImage() && 
+                     isValidImageSize();
+    }
+    
+    // Signatures numériques (pour contrats/documents)
+    match /signatures/{userId}/{allPaths=**} {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId) && 
+                     isImage() && 
+                     isValidImageSize();
+    }
+    
+    // ==================== RÈGLE PAR DÉFAUT ====================
+    
+    // Tout le reste est REFUSÉ par défaut
+    // Sécurité maximale: ce qui n'est pas explicitement autorisé est interdit
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

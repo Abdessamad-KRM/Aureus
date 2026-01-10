@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+    alias(libs.plugins.firebase.crashlytics)
     id("com.google.gms.google-services")  // ← REMOVED: version "4.4.2" apply false
 }
 
@@ -120,6 +121,9 @@ dependencies {
 
     // Coroutines Firebase pour Android
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.9.0")
+
+    // Google Play Services Auth (pour Google Sign-In)
+    implementation(libs.play.services.auth)
 
     // Testing
     testImplementation(libs.junit)

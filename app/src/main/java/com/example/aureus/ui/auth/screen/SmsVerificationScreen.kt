@@ -1,5 +1,6 @@
 package com.example.aureus.ui.auth.screen
 
+import android.app.Activity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
 import androidx.compose.animation.fadeIn
@@ -27,6 +28,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -34,6 +36,9 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.aureus.ui.auth.viewmodel.PhoneAuthState
+import com.example.aureus.ui.auth.viewmodel.PhoneAuthViewModel
 import com.example.aureus.ui.theme.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -47,17 +52,58 @@ import kotlinx.coroutines.launch
 fun SmsVerificationScreen(
     phoneNumber: String = "+212 6XX XXX XXX", // Phone number to display
     onVerificationSuccess: () -> Unit,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onResendCode: () -> Unit = {},
+    shouldSendCode: Boolean = false,  // Indique si on doit envoyer le code SMS
+    viewModel: PhoneAuthViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
+    val activity = context as? Activity
+
     var code by remember { mutableStateOf("") }
-    var isVerifying by remember { mutableStateOf(false) }
     var isSuccess by remember { mutableStateOf(false) }
     var isError by remember { mutableStateOf(false) }
     var resendCountdown by remember { mutableStateOf(60) }
     var canResend by remember { mutableStateOf(false) }
-    
+
+    val phoneAuthState by viewModel.phoneAuthState.collectAsState()
     val scope = rememberCoroutineScope()
-    
+
+    // Envoyer le code SMS si nécessaire (cas Register)
+    LaunchedEffect(Unit) {
+        if (shouldSendCode && activity != null && phoneAuthState !is PhoneAuthState.CodeSent) {
+            viewModel.sendVerificationCode(phoneNumber, activity)
+        }
+    }
+
+    // Handle auth state changes
+    LaunchedEffect(phoneAuthState) {
+        when (val state = phoneAuthState) {
+            is PhoneAuthState.Success -> {
+                isSuccess = true
+                delay(1000)
+                onVerificationSuccess()
+            }
+            is PhoneAuthState.Error -> {
+                isError = true
+                delay(2000)
+                isError = false
+                code = ""
+            }
+            PhoneAuthState.Verifying -> {
+                // Verification in progress
+            }
+            else -> {}
+        }
+    }
+
+    // Auto-verify when 6 digits are entered
+    LaunchedEffect(code) {
+        if (code.length == 6 && phoneAuthState !is PhoneAuthState.Verifying) {
+            viewModel.verifyOtpCode(code)
+        }
+    }
+
     // Countdown timer for resend
     LaunchedEffect(Unit) {
         while (resendCountdown > 0) {
@@ -65,27 +111,6 @@ fun SmsVerificationScreen(
             resendCountdown--
         }
         canResend = true
-    }
-    
-    // Auto-verify when 6 digits are entered
-    LaunchedEffect(code) {
-        if (code.length == 6) {
-            isVerifying = true
-            delay(1500) // Simulate API call
-            
-            // Static validation - accept "123456" as correct code
-            if (code == "123456") {
-                isSuccess = true
-                delay(1000)
-                onVerificationSuccess()
-            } else {
-                isError = true
-                delay(2000)
-                isError = false
-                code = ""
-            }
-            isVerifying = false
-        }
     }
     
     Box(
@@ -178,7 +203,7 @@ fun SmsVerificationScreen(
             
             // Status message
             AnimatedVisibility(
-                visible = isVerifying,
+                visible = phoneAuthState is PhoneAuthState.Verifying,
                 enter = fadeIn() + scaleIn(),
                 exit = fadeOut() + scaleOut()
             ) {
@@ -199,7 +224,7 @@ fun SmsVerificationScreen(
                     )
                 }
             }
-            
+
             AnimatedVisibility(
                 visible = isSuccess,
                 enter = fadeIn() + scaleIn(),
@@ -224,22 +249,22 @@ fun SmsVerificationScreen(
                     )
                 }
             }
-            
+
             AnimatedVisibility(
-                visible = isError,
+                visible = isError && phoneAuthState is PhoneAuthState.Error,
                 enter = fadeIn() + scaleIn(),
                 exit = fadeOut() + scaleOut()
             ) {
                 Text(
-                    text = "Code incorrect. Veuillez réessayer.",
+                    text = (phoneAuthState as? PhoneAuthState.Error)?.message ?: "Code incorrect. Veuillez réessayer.",
                     color = SemanticRed,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(40.dp))
-            
+
             // Resend code
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -250,14 +275,14 @@ fun SmsVerificationScreen(
                     color = NeutralWhite.copy(alpha = 0.7f),
                     fontSize = 14.sp
                 )
-                
+
                 if (canResend) {
                     TextButton(
                         onClick = {
-                            // Resend logic here
                             canResend = false
                             resendCountdown = 60
                             code = ""
+                            onResendCode()
                             scope.launch {
                                 while (resendCountdown > 0) {
                                     delay(1000)
@@ -282,16 +307,6 @@ fun SmsVerificationScreen(
                     )
                 }
             }
-            
-            Spacer(modifier = Modifier.height(24.dp))
-            
-            // Helper text
-            Text(
-                text = "Code de test : 123456",
-                color = SecondaryGold.copy(alpha = 0.6f),
-                fontSize = 12.sp,
-                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
-            )
         }
     }
 }

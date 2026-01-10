@@ -142,14 +142,15 @@ private fun ProfileInfoCard(label: String, value: String, icon: ImageVector) {
     }
 }
 
-// Settings Screen
+// Settings Screen - Version démo statique
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     onNavigateBack: () -> Unit = {},
     onChangePassword: () -> Unit = {},
     onLanguage: () -> Unit = {},
-    onTerms: () -> Unit = {}
+    onTerms: () -> Unit = {},
+    onLogout: () -> Unit = {}
 ) {
     Scaffold(
         topBar = {
@@ -212,6 +213,20 @@ fun SettingsScreen(
                         Text("Version 1.0.0", fontSize = 12.sp, color = NeutralMediumGray)
                         Text("© 2026 Aureus Bank", fontSize = 10.sp, color = NeutralMediumGray)
                     }
+                }
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = onLogout,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = SemanticRed),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(Icons.Default.Logout, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Logout")
                 }
             }
         }

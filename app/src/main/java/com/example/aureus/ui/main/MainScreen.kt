@@ -16,13 +16,13 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.example.aureus.ui.cards.MyCardsScreen
 import com.example.aureus.ui.home.HomeScreen
-import com.example.aureus.ui.profile.ProfileScreen
 import com.example.aureus.ui.profile.SettingsScreen
 import com.example.aureus.ui.statistics.StatisticsScreen
 import com.example.aureus.ui.theme.*
+import androidx.compose.material.icons.automirrored.filled.*
 
 /**
- * Main Screen with Bottom Navigation
+ * Main Screen with Bottom Navigation - Version démo statique
  * Centralizes navigation between main app sections
  */
 @Composable
@@ -30,13 +30,8 @@ fun MainScreen(
     onNavigateToTransactions: () -> Unit = {},
     onNavigateToSendMoney: () -> Unit = {},
     onNavigateToRequestMoney: () -> Unit = {},
-    onNavigateToSearch: () -> Unit = {},
-    onNavigateToAllCards: () -> Unit = {},
     onNavigateToAddCard: () -> Unit = {},
-    onNavigateToEditProfile: () -> Unit = {},
-    onNavigateToChangePassword: () -> Unit = {},
-    onNavigateToLanguage: () -> Unit = {},
-    onNavigateToTerms: () -> Unit = {},
+    onNavigateToProfile: () -> Unit = {},
     onLogout: () -> Unit = {}
 ) {
     var selectedTab by remember { mutableStateOf(0) }
@@ -59,7 +54,9 @@ fun MainScreen(
                     onNavigateToStatistics = { selectedTab = 1 },
                     onNavigateToCards = { selectedTab = 2 },
                     onNavigateToTransactions = onNavigateToTransactions,
-                    onNavigateToProfile = { selectedTab = 3 }
+                    onNavigateToSendMoney = onNavigateToSendMoney,
+                    onNavigateToRequestMoney = onNavigateToRequestMoney,
+                    onNavigateToProfile = onNavigateToProfile
                 )
                 1 -> StatisticsScreen(
                     onNavigateBack = { selectedTab = 0 }
@@ -70,9 +67,7 @@ fun MainScreen(
                 )
                 3 -> SettingsScreen(
                     onNavigateBack = { selectedTab = 0 },
-                    onChangePassword = onNavigateToChangePassword,
-                    onLanguage = onNavigateToLanguage,
-                    onTerms = onNavigateToTerms
+                    onLogout = onLogout
                 )
             }
         }

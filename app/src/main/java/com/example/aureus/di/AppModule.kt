@@ -10,6 +10,8 @@ import com.example.aureus.data.remote.RetrofitClient
 import com.example.aureus.data.remote.api.AccountApiService
 import com.example.aureus.data.remote.api.AuthApiService
 import com.example.aureus.data.remote.api.TransactionApiService
+import com.example.aureus.data.remote.firebase.FirebaseAuthManager
+import com.example.aureus.data.remote.firebase.FirebaseDataManager
 import com.example.aureus.data.repository.AccountRepositoryImpl
 import com.example.aureus.data.repository.AuthRepositoryImpl
 import com.example.aureus.data.repository.TransactionRepositoryImpl
@@ -17,6 +19,9 @@ import com.example.aureus.domain.repository.AccountRepository
 import com.example.aureus.domain.repository.AuthRepository
 import com.example.aureus.domain.repository.TransactionRepository
 import com.example.aureus.util.SharedPreferencesManager
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.FirebaseStorage
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -85,13 +90,52 @@ object AppModule {
         return RetrofitClient.transactionApiService
     }
 
+    // ==================== FIREBASE MODULES ====================
+
+    @Provides
+    @Singleton
+    fun provideFirebaseAuth(): FirebaseAuth {
+        return FirebaseAuth.getInstance()
+    }
+
+    @Provides
+    @Singleton
+    fun provideFirebaseFirestore(): FirebaseFirestore {
+        return FirebaseFirestore.getInstance()
+    }
+
+    @Provides
+    @Singleton
+    fun provideFirebaseStorage(): FirebaseStorage {
+        return FirebaseStorage.getInstance()
+    }
+
+    @Provides
+    @Singleton
+    fun provideFirebaseAuthManager(auth: FirebaseAuth): FirebaseAuthManager {
+        return FirebaseAuthManager(auth)
+    }
+
+    @Provides
+    @Singleton
+    fun provideFirebaseDataManager(
+        auth: FirebaseAuth,
+        firestore: FirebaseFirestore,
+        storage: FirebaseStorage
+    ): FirebaseDataManager {
+        return FirebaseDataManager(auth, firestore, storage)
+    }
+
+    // ==================== REPOSITORIES ====================
+
     @Provides
     @Singleton
     fun provideAuthRepository(
-        @ApplicationContext context: Context
+        userDao: UserDao,
+        preferencesManager: SharedPreferencesManager
     ): AuthRepository {
-        // Use static implementation for demo
-        return com.example.aureus.data.repository.AuthRepositoryStaticImpl(context)
+        // Utiliser l'implémentation avec UserDao et PreferencesManager
+        return AuthRepositoryImpl(userDao, preferencesManager)
     }
 
     @Provides

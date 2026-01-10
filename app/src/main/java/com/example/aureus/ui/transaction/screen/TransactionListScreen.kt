@@ -56,6 +56,7 @@ fun TransactionListScreen(
         }
     ) { paddingValues ->
         when (transactionsState) {
+            Resource.Idle,
             is Resource.Loading -> {
                 Box(
                     modifier = Modifier

@@ -21,10 +21,18 @@ data class User(
     val profileImage: String? = null,
     val address: String? = null,
     val city: String? = null,
-    val country: String = "Morocco"
+    val country: String = "Morocco",
+    val createdAt: String = "",
+    val updatedAt: String = ""
 )
 
 object TestAccount {
+    // COMPTE DÉMO POUR PRÉSENTATION CLIENT - Bypass SMS/PIN
+    // Utiliser ce compte pour un login direct sans SMS verification ni PIN setup
+    const val DEMO_EMAIL = "demo@aureus.ma"
+    const val DEMO_PASSWORD = "Demo1234!"
+    
+    // Compte test normal
     const val EMAIL = "yassir.hamzaoui@aureus.ma"
     const val PASSWORD = "Maroc2024!"
     const val PIN = "1234"
@@ -44,7 +52,9 @@ object TestAccount {
         phone = PHONE,
         address = ADDRESS,
         city = CITY,
-        country = COUNTRY
+        country = COUNTRY,
+        createdAt = "2026-01-10",
+        updatedAt = "2026-01-10"
     )
 }
 

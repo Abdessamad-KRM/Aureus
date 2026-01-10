@@ -22,7 +22,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.aureus.data.*
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.aureus.ui.home.viewmodel.HomeViewModel
 import com.example.aureus.ui.theme.*
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
@@ -30,27 +31,46 @@ import java.util.*
 
 /**
  * Home/Dashboard Screen - Main screen of the app
+ * Version démo statique avec données fictives
  */
 @Composable
 fun HomeScreen(
+    viewModel: HomeViewModel = hiltViewModel(),
     onNavigateToStatistics: () -> Unit = {},
     onNavigateToCards: () -> Unit = {},
     onNavigateToTransactions: () -> Unit = {},
+    onNavigateToSendMoney: () -> Unit = {},
+    onNavigateToRequestMoney: () -> Unit = {},
     onNavigateToProfile: () -> Unit = {}
 ) {
-    val defaultCard = remember { StaticCards.cards.first() }
-    val recentTransactions = remember { StaticTransactions.transactions.take(5) }
+    val uiState by viewModel.uiState.collectAsState()
+
+    if (uiState.isLoading) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(NeutralLightGray),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = SecondaryGold)
+        }
+        return
+    }
+
+    val userName = viewModel.getCurrentUserName()
+    val defaultCard = uiState.defaultCard
+    val recentTransactions = uiState.recentTransactions
 
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .background(NeutralLightGray),
-        contentPadding = PaddingValues(bottom = 16.dp)
+        contentPadding = PaddingValues(bottom = 80.dp) // Extra padding for bottom nav
     ) {
         // Header
         item {
-            HomeHeader(
-                user = TestAccount.user,
+            HomeHeaderDemo(
+                userName = userName,
                 onProfileClick = onNavigateToProfile
             )
         }
@@ -58,8 +78,9 @@ fun HomeScreen(
         // Balance Card
         item {
             Spacer(modifier = Modifier.height(24.dp))
-            BankCardDisplay(
-                card = defaultCard,
+            DynamicBalanceCard(
+                balance = uiState.totalBalance,
+                defaultCard = defaultCard,
                 onClick = onNavigateToCards
             )
         }
@@ -67,7 +88,10 @@ fun HomeScreen(
         // Quick Actions
         item {
             Spacer(modifier = Modifier.height(24.dp))
-            QuickActionsRow()
+            QuickActionsRow(
+                onNavigateToSendMoney = onNavigateToSendMoney,
+                onNavigateToRequestMoney = onNavigateToRequestMoney
+            )
         }
 
         // Mini Chart
@@ -90,8 +114,8 @@ fun HomeScreen(
         }
 
         items(recentTransactions) { transaction ->
-            TransactionItem(
-                transaction = transaction,
+            DynamicTransactionItem(
+                transaction = transaction as Map<String, Any>,
                 onClick = { /* Navigate to transaction detail */ }
             )
         }
@@ -105,6 +129,346 @@ fun HomeScreen(
             ) {
                 Text("View All Transactions", color = SecondaryGold)
             }
+        }
+    }
+}
+
+@Composable
+private fun HomeHeader(
+    userName: String,
+    onProfileClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(20.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(SecondaryGold.copy(alpha = 0.2f))
+                    .clickable(onClick = onProfileClick),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = if (userName.isNotBlank()) userName.first().uppercaseChar().toString() else "U",
+                    color = SecondaryGold,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column {
+                Text(
+                    text = "Bienvenue,",
+                    fontSize = 14.sp,
+                    color = NeutralMediumGray
+                )
+                Text(
+                    text = userName,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = PrimaryNavyBlue
+                )
+            }
+        }
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = { /* Notifications */ }) {
+                Icon(
+                    imageVector = Icons.Default.Notifications,
+                    contentDescription = "Notifications",
+                    tint = PrimaryNavyBlue
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun HomeHeaderDemo(
+    userName: String,
+    onProfileClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(20.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(SecondaryGold.copy(alpha = 0.2f))
+                    .clickable(onClick = onProfileClick),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = if (userName.isNotBlank()) userName.first().uppercaseChar().toString() else "U",
+                    color = SecondaryGold,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column {
+                Text(
+                    text = "Bienvenue,",
+                    fontSize = 14.sp,
+                    color = NeutralMediumGray
+                )
+                Text(
+                    text = userName,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = PrimaryNavyBlue
+                )
+            }
+        }
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = { /* Notifications */ }) {
+                Icon(
+                    imageVector = Icons.Default.Notifications,
+                    contentDescription = "Notifications",
+                    tint = PrimaryNavyBlue
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DynamicHomeHeader(
+    userName: String,
+    onProfileClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(20.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(SecondaryGold.copy(alpha = 0.2f))
+                    .clickable(onClick = onProfileClick),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = if (userName.isNotBlank()) userName.first().uppercaseChar().toString() else "U",
+                    color = SecondaryGold,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column {
+                Text(
+                    text = "Welcome back,",
+                    fontSize = 14.sp,
+                    color = NeutralMediumGray
+                )
+                Text(
+                    text = userName,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = PrimaryNavyBlue
+                )
+            }
+        }
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = { /* Notifications */ }) {
+                Icon(
+                    imageVector = Icons.Default.Notifications,
+                    contentDescription = "Notifications",
+                    tint = PrimaryNavyBlue
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DynamicBalanceCard(
+    balance: Double,
+    defaultCard: Map<String, Any>?,
+    onClick: () -> Unit
+) {
+    val cardNumber = defaultCard?.get("cardNumber") as? String ?: "4242"
+    val cardHolder = defaultCard?.get("cardHolder") as? String ?: "User"
+    val cardType = defaultCard?.get("cardType") as? String ?: "VISA"
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp)
+            .height(200.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(PrimaryNavyBlue, PrimaryMediumBlue)
+                    )
+                )
+                .padding(20.dp)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                // Card header
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Solde Total",
+                        color = NeutralWhite.copy(alpha = 0.8f),
+                        fontSize = 14.sp
+                    )
+                    Icon(
+                        imageVector = Icons.Default.CreditCard,
+                        contentDescription = null,
+                        tint = SecondaryGold,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                // Balance
+                Text(
+                    text = formatCurrency(balance),
+                    color = NeutralWhite,
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1
+                )
+
+                // Card number and details
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Bottom
+                ) {
+                    Column {
+                        Text(
+                            text = "**** **** **** $cardNumber",
+                            color = NeutralWhite,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium,
+                            letterSpacing = 2.sp
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = cardHolder,
+                            color = NeutralWhite.copy(alpha = 0.8f),
+                            fontSize = 12.sp
+                        )
+                    }
+                    Text(
+                        text = cardType,
+                        color = SecondaryGold,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DynamicTransactionItem(
+    transaction: Map<String, Any>,
+    onClick: () -> Unit
+) {
+    val title = transaction["title"] as? String ?: "Transaction"
+    val amount = transaction["amount"] as? Double ?: 0.0
+    val type = transaction["type"] as? String ?: "EXPENSE"
+    val createdAt = transaction["createdAt"] as? com.google.firebase.Timestamp
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 4.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = NeutralWhite)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(
+                            when (type) {
+                                "INCOME" -> SemanticGreen.copy(alpha = 0.1f)
+                                "EXPENSE" -> SemanticRed.copy(alpha = 0.1f)
+                                else -> SecondaryGold.copy(alpha = 0.1f)
+                            }
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = when (type) {
+                            "INCOME" -> Icons.Default.TrendingUp
+                            "EXPENSE" -> Icons.Default.TrendingDown
+                            else -> Icons.Default.SwapHoriz
+                        },
+                        contentDescription = null,
+                        tint = when (type) {
+                            "INCOME" -> SemanticGreen
+                            "EXPENSE" -> SemanticRed
+                            else -> SecondaryGold
+                        },
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text(
+                        text = title,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = PrimaryNavyBlue
+                    )
+                    Text(
+                        text = formatTransactionDate(createdAt),
+                        fontSize = 12.sp,
+                        color = NeutralMediumGray
+                    )
+                }
+            }
+            Text(
+                text = "${if (amount > 0) "+" else ""}${formatCurrency(amount)}",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = if (amount > 0 || type == "INCOME") SemanticGreen else SemanticRed
+            )
         }
     }
 }
@@ -163,94 +527,25 @@ private fun HomeHeader(
     }
 }
 
+// ==================== LEGACY STATIC COMPONENTS (OBSOLETE - Kept for reference) ====================
+// NOTE: These components use StaticData and are no longer used in Firebase integration
+// Use DynamicBalanceCard and DynamicTransactionItem instead
+
+/*
 @Composable
 private fun BankCardDisplay(
     card: BankCard,
     onClick: () -> Unit
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp)
-            .height(200.dp)
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    brush = Brush.horizontalGradient(
-                        colors = listOf(PrimaryNavyBlue, PrimaryMediumBlue)
-                    )
-                )
-                .padding(20.dp)
-        ) {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
-                // Card header
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = "Total Balance",
-                        color = NeutralWhite.copy(alpha = 0.8f),
-                        fontSize = 14.sp
-                    )
-                    Icon(
-                        imageVector = Icons.Default.CreditCard,
-                        contentDescription = null,
-                        tint = SecondaryGold
-                    )
-                }
-
-                // Balance
-                Text(
-                    text = formatCurrency(card.balance),
-                    color = NeutralWhite,
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold
-                )
-
-                // Card number and details
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Bottom
-                ) {
-                    Column {
-                        Text(
-                            text = maskCardNumber(card.cardNumber),
-                            color = NeutralWhite,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium,
-                            letterSpacing = 2.sp
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = card.cardHolder,
-                            color = NeutralWhite.copy(alpha = 0.8f),
-                            fontSize = 12.sp
-                        )
-                    }
-                    Text(
-                        text = card.cardType.name,
-                        color = SecondaryGold,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-        }
-    }
+    // Obsolete - use DynamicBalanceCard instead
 }
+*/
 
 @Composable
-private fun QuickActionsRow() {
+private fun QuickActionsRow(
+    onNavigateToSendMoney: () -> Unit = {},
+    onNavigateToRequestMoney: () -> Unit = {}
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -260,22 +555,22 @@ private fun QuickActionsRow() {
         QuickActionButton(
             icon = Icons.Default.Send,
             label = "Send",
-            onClick = { /* Send money */ }
+            onClick = onNavigateToSendMoney
         )
         QuickActionButton(
             icon = Icons.Default.AccountBalance,
             label = "Request",
-            onClick = { /* Request money */ }
+            onClick = onNavigateToRequestMoney
         )
         QuickActionButton(
             icon = Icons.Default.QrCodeScanner,
             label = "Scan",
-            onClick = { /* Scan QR */ }
+            onClick = { /* Scan QR - Future feature */ }
         )
         QuickActionButton(
             icon = Icons.Default.MoreHoriz,
             label = "More",
-            onClick = { /* More options */ }
+            onClick = { /* More options - Future feature */ }
         )
     }
 }
@@ -300,7 +595,7 @@ private fun QuickActionButton(
             Icon(
                 imageVector = icon,
                 contentDescription = label,
-                tint = PrimaryNavyBlue,
+                tint = SecondaryGold,
                 modifier = Modifier.size(24.dp)
             )
         }
@@ -381,79 +676,16 @@ private fun SimplifiedChart() {
     }
 }
 
+// Obsolete - Use DynamicTransactionItem instead (Firebase-based)
+/*
 @Composable
 private fun TransactionItem(
     transaction: Transaction,
     onClick: () -> Unit
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 4.dp)
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = NeutralWhite)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(
-                            when (transaction.type) {
-                                TransactionType.INCOME -> SemanticGreen.copy(alpha = 0.1f)
-                                TransactionType.EXPENSE -> SemanticRed.copy(alpha = 0.1f)
-                                TransactionType.TRANSFER -> SecondaryGold.copy(alpha = 0.1f)
-                            }
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = when (transaction.type) {
-                            TransactionType.INCOME -> Icons.Default.TrendingUp
-                            TransactionType.EXPENSE -> Icons.Default.TrendingDown
-                            TransactionType.TRANSFER -> Icons.Default.SwapHoriz
-                        },
-                        contentDescription = null,
-                        tint = when (transaction.type) {
-                            TransactionType.INCOME -> SemanticGreen
-                            TransactionType.EXPENSE -> SemanticRed
-                            TransactionType.TRANSFER -> SecondaryGold
-                        },
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Column {
-                    Text(
-                        text = transaction.title,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = PrimaryNavyBlue
-                    )
-                    Text(
-                        text = formatTransactionDate(transaction.date),
-                        fontSize = 12.sp,
-                        color = NeutralMediumGray
-                    )
-                }
-            }
-            Text(
-                text = "${if (transaction.amount > 0) "+" else ""}${formatCurrency(transaction.amount)}",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = if (transaction.amount > 0) SemanticGreen else SemanticRed
-            )
-        }
-    }
+    // Legacy component - no longer used
 }
+*/
 
 @Composable
 private fun BottomNavigationBar(
@@ -524,6 +756,14 @@ private fun maskCardNumber(cardNumber: String): String {
     return "**** **** **** " + cardNumber.takeLast(4)
 }
 
+private fun formatTransactionDate(timestamp: com.google.firebase.Timestamp?): String {
+    if (timestamp == null) return "Just now"
+    val date = timestamp.toDate()
+    val format = SimpleDateFormat("dd MMM, HH:mm", Locale.getDefault())
+    return format.format(date)
+}
+
+// Keep original for compatibility with Transaction data class
 private fun formatTransactionDate(date: Date): String {
     val format = SimpleDateFormat("dd MMM, HH:mm", Locale.getDefault())
     return format.format(date)
