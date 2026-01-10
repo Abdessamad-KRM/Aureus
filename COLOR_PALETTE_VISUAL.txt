@@ -1,0 +1,264 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    🎨 AUREUS COLOR PALETTE VISUAL                             ║
+║                         Design System v1.0                                    ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                          COULEURS PRIMAIRES                                   │
+│                     (Actions & Éléments Principaux)                          │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+    ┌─────────────────────────────┐     ┌─────────────────────────────┐
+    │                             │     │                             │
+    │     PRIMARY NAVY BLUE       │     │   PRIMARY MEDIUM BLUE       │
+    │         #1E3A5F             │     │         #2C5F8D             │
+    │                             │     │                             │
+    │  Boutons, Headers,          │     │  États actifs,              │
+    │  Navigation, Branding       │     │  Hover, Focus               │
+    │                             │     │                             │
+    └─────────────────────────────┘     └─────────────────────────────┘
+
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                        COULEURS SECONDAIRES                                   │
+│                      (Accents Premium & Prestige)                            │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+    ┌─────────────────────────────┐     ┌─────────────────────────────┐
+    │                             │     │                             │
+    │      SECONDARY GOLD         │     │   SECONDARY DARK GOLD       │
+    │         #D4AF37             │     │         #C89F3C             │
+    │                             │     │                             │
+    │  Premium, Badges,           │     │  Hover states,              │
+    │  Soldes positifs            │     │  Pressed states             │
+    │                             │     │                             │
+    └─────────────────────────────┘     └─────────────────────────────┘
+
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                       COULEURS SÉMANTIQUES                                    │
+│                     (Feedback & États Utilisateur)                           │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+  ┌──────────────────────┐  ┌──────────────────────┐  ┌──────────────────────┐
+  │                      │  │                      │  │                      │
+  │   SEMANTIC GREEN     │  │   SEMANTIC RED       │  │   SEMANTIC AMBER     │
+  │      #10B981         │  │      #EF4444         │  │      #F59E0B         │
+  │                      │  │                      │  │                      │
+  │  ✓ Succès            │  │  ✗ Erreur            │  │  ⚠ Avertissement     │
+  │  ✓ Validé            │  │  ✗ Rejeté            │  │  ⚠ Attention         │
+  │  ✓ Transactions +    │  │  ✗ Transactions -    │  │  ⚠ Solde faible      │
+  │                      │  │                      │  │                      │
+  └──────────────────────┘  └──────────────────────┘  └──────────────────────┘
+
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                          COULEURS NEUTRES                                     │
+│                      (UI, Backgrounds & Textes)                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐
+  │                  │  │                  │  │                  │  │                  │
+  │  NEUTRAL WHITE   │  │ NEUTRAL LIGHT    │  │ NEUTRAL MEDIUM   │  │ NEUTRAL DARK     │
+  │                  │  │      GRAY        │  │      GRAY        │  │      GRAY        │
+  │    #FFFFFF       │  │    #F8FAFC       │  │    #64748B       │  │    #1E293B       │
+  │                  │  │                  │  │                  │  │                  │
+  │ Cards,           │  │ Background       │  │ Textes           │  │ Titres,          │
+  │ Dialogs,         │  │ général,         │  │ secondaires,     │  │ Textes           │
+  │ Surfaces         │  │ Sections         │  │ Labels           │  │ principaux       │
+  │                  │  │                  │  │                  │  │                  │
+  └──────────────────┘  └──────────────────┘  └──────────────────┘  └──────────────────┘
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                        EXEMPLES D'UTILISATION                                 ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  BOUTONS                                                                      │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│    [  Transférer  ]     [  Premium  ]     [  Confirmer  ]     [  Annuler  ] │
+│    Primary Navy         Secondary           Semantic            Semantic     │
+│    Blue                 Gold                Green               Red          │
+│                                                                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  TRANSACTIONS                                                                 │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│    ↓ Virement reçu                                           +500,00 €       │
+│      12 Jan 2026 • 14:30                               (SemanticGreen)       │
+│                                                                               │
+│    ↑ Achat Carrefour                                         -42,50 €        │
+│      12 Jan 2026 • 11:15                                (SemanticRed)        │
+│                                                                               │
+│    💰 Solde Premium                                         2 500,00 €        │
+│      Compte Premium                                   (SecondaryGold)        │
+│                                                                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  CARDS & BADGES                                                               │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│    ╔═══════════════════════════════════════════╗                            │
+│    ║  Compte Courant            [Premium]      ║                            │
+│    ║  •••• •••• •••• 1234       (Gold Badge)   ║                            │
+│    ║                                            ║                            │
+│    ║  Solde disponible                          ║                            │
+│    ║  2 500,00 €                                ║                            │
+│    ║  (Gold Text)                               ║                            │
+│    ╚═══════════════════════════════════════════╝                            │
+│    (Card: NeutralWhite background)                                           │
+│                                                                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  ALERTES & NOTIFICATIONS                                                      │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│    ┌────────────────────────────────────────────────────────────────┐       │
+│    │ ✓  Transaction effectuée avec succès !                         │       │
+│    └────────────────────────────────────────────────────────────────┘       │
+│    (SemanticGreen background + text)                                         │
+│                                                                               │
+│    ┌────────────────────────────────────────────────────────────────┐       │
+│    │ ✗  Une erreur est survenue. Veuillez réessayer.               │       │
+│    └────────────────────────────────────────────────────────────────┘       │
+│    (SemanticRed background + text)                                           │
+│                                                                               │
+│    ┌────────────────────────────────────────────────────────────────┐       │
+│    │ ⚠  Attention : Votre solde est faible (< 100 €)               │       │
+│    └────────────────────────────────────────────────────────────────┘       │
+│    (SemanticAmber background + text)                                         │
+│                                                                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                          HIÉRARCHIE VISUELLE                                  ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+    Niveau 1: PrimaryNavyBlue       → Actions principales, Navigation
+              ↓
+    Niveau 2: SecondaryGold         → Accents premium, Highlights
+              ↓
+    Niveau 3: Semantic Colors       → Feedback utilisateur, États
+              ↓
+    Niveau 4: NeutralDarkGray       → Textes principaux
+              ↓
+    Niveau 5: NeutralMediumGray     → Textes secondaires
+              ↓
+    Niveau 6: NeutralLightGray      → Backgrounds, Séparateurs
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                        VARIANTES & OPACITÉS                                   ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+    PrimaryNavyBlue     100%  ████████████  #1E3A5F
+                         70%  ██████████░░  ColorVariants.PrimaryNavyBlue70
+                         50%  ████████░░░░  ColorVariants.PrimaryNavyBlue50
+                         20%  ████░░░░░░░░  ColorVariants.PrimaryNavyBlue20
+                         10%  ██░░░░░░░░░░  ColorVariants.PrimaryNavyBlue10
+
+    SecondaryGold       100%  ████████████  #D4AF37
+                         50%  ████████░░░░  ColorVariants.SecondaryGold50
+                         20%  ████░░░░░░░░  ColorVariants.SecondaryGold20
+                         10%  ██░░░░░░░░░░  ColorVariants.SecondaryGold10
+
+    SemanticGreen       100%  ████████████  #10B981
+                         20%  ████░░░░░░░░  ColorVariants.SemanticGreen20
+                         10%  ██░░░░░░░░░░  ColorVariants.SemanticGreen10
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                             GRADIENTS                                         ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+    PrimaryGradient:     ████████████ → ████████████
+                         PrimaryNavyBlue → PrimaryMediumBlue
+                         (Headers, Hero sections)
+
+    GoldGradient:        ████████████ → ████████████
+                         SecondaryGold → SecondaryDarkGold
+                         (Premium cards, Special offers)
+
+    PremiumGradient:     ████████████ → ████████████
+                         PrimaryNavyBlue → SecondaryGold
+                         (Premium features, Splash screen)
+
+    SuccessGradient:     ████████████ → ████████████
+                         SemanticGreen → Darker Green
+                         (Success animations, Confirmations)
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                        RÈGLES DE CONTRASTE                                    ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+    ✅ EXCELLENT CONTRASTE (7:1 ou plus)
+    ├─ PrimaryNavyBlue sur NeutralWhite
+    ├─ NeutralDarkGray sur NeutralWhite
+    └─ NeutralWhite sur PrimaryNavyBlue
+
+    ✅ BON CONTRASTE (4.5:1 à 7:1)
+    ├─ SemanticGreen sur NeutralWhite
+    ├─ SemanticRed sur NeutralWhite
+    ├─ NeutralMediumGray sur NeutralWhite
+    └─ SecondaryGold sur PrimaryNavyBlue
+
+    ⚠️  CONTRASTE ACCEPTABLE (3:1 à 4.5:1)
+    ├─ SecondaryGold sur NeutralWhite (pour éléments non-textuels)
+    └─ SemanticAmber sur NeutralWhite
+
+    ❌ ÉVITER
+    ├─ NeutralLightGray sur NeutralWhite
+    ├─ PrimaryMediumBlue sur PrimaryNavyBlue
+    └─ Couleurs claires sur couleurs claires
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                          IMPORTS & USAGE                                      ║
+╚══════════════════════════════════════════════════════════���═══════════════════╝
+
+    // Import dans vos fichiers Kotlin
+    import com.example.aureus.ui.theme.*
+
+    // Utilisation basique
+    Text(color = PrimaryNavyBlue)
+    Button(colors = ButtonDefaults.buttonColors(
+        containerColor = PrimaryNavyBlue
+    ))
+
+    // Variantes
+    Box(modifier = Modifier.background(ColorVariants.PrimaryNavyBlue10))
+
+    // Gradients
+    Box(modifier = Modifier.background(
+        brush = Brush.linearGradient(AppGradients.PremiumGradient)
+    ))
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                        DOCUMENTATION FILES                                    ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+    📚 COLOR_PALETTE_GUIDE.md       → Documentation complète et détaillée
+    ⚡ COLOR_QUICK_REFERENCE.md     → Référence rapide pour développement
+    📋 COLOR_SYSTEM_SUMMARY.md      → Vue d'ensemble et migration
+    🎨 COLOR_PALETTE_VISUAL.txt     → Ce fichier (visualisation)
+
+
+═══════════════════════════════════════════════════════════════════════════════
+
+                    ✨ PALETTE AUREUS - READY TO USE! ✨
+
+                    Design by: Aureus Design System
+                    Version: 1.0
+                    Last Updated: January 2026
+
+═══════════════════════════════════════════════════════════════════════════════

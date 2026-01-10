@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "437186810132",
+    "project_id": "aureus-aee48",
+    "storage_bucket": "aureus-aee48.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:437186810132:android:c7372d6e51f0818f8ef201",
+        "android_client_info": {
+          "package_name": "com.example.aureus"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyADfEdcIFeT0Smk37M7qY2VSaEK6kQyHns"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

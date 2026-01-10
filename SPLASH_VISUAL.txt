@@ -1,0 +1,333 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    🚀 AUREUS SPLASH SCREEN VISUAL                             ║
+║                         Version Advanced                                      ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                         APERÇU DU SPLASH SCREEN                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+    ╔════════════════════════════════════════════════════════╗
+    ║                                                        ║
+    ║                  Background Gradient                   ║
+    ║              #0A1628 → Navy → Medium Blue              ║
+    ║                                                        ║
+    ║        ◯      ◯      ◯      ◯                         ║
+    ║         \     |     /      /                          ║
+    ║          \    |    /      /                           ║
+    ║    ◯ ─────╳──────╳───────◯  Cercles concentriques    ║
+    ║          /    |    \      \  animés + Particules      ║
+    ║         /     |     \      \                          ║
+    ║        ◯      ◯      ◯      ◯                         ║
+    ║                                                        ║
+    ║                  ╭─────────────╮                      ║
+    ║                  │   ░░░░░░░   │  Glow radial         ║
+    ║                  │  ░       ░  │  doré                ║
+    ║                  │ ░  LOGO  ░  │                      ║
+    ║                  │  ░ (PNG) ░  │  Animation:          ║
+    ║                  │   ░░░░░░░   │  - Scale bounce      ║
+    ║                  ╰─────────────╯  - Rotation entry   ║
+    ║                      ◉            - Fade in          ║
+    ║                  (Cercle doré     - Pulse continue   ║
+    ║                   tournant)                            ║
+    ║                                                        ║
+    ║                    A U R E U S                         ║
+    ║                  ══════════════                        ║
+    ║                (Ligne animée dorée)                    ║
+    ║                                                        ║
+    ║             Votre Banque Digitale                      ║
+    ║            (Or - SecondaryGold)                        ║
+    ║                                                        ║
+    ║            Prestige & Confiance                        ║
+    ║         (Blanc transparent)                            ║
+    ║                                                        ║
+    ║                                                        ║
+    ║                    ● ● ●                               ║
+    ║              (Indicateur animé)                        ║
+    ║                                                        ║
+    ╚════════════════════════════════════════════════════════╝
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                        TIMELINE D'ANIMATION (3.5s)                            ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+    0.0s ════════════════════════════════════════════════════════════> 3.5s
+         │                         │                    │
+         ├─ Début                  ├─ Animations       └─ Navigation
+         │  - Gradient fade in     │   d'entrée         
+         │  - Cercles appear       │   terminées        
+         │  - Logo scale start     │                    
+         │  - Logo rotation        │                    
+         │                         │                    
+         0.5s ────────────────────>│                    
+         │  Logo visible 50%       │                    
+         │  Cercles visibles       │                    
+         │                         │                    
+         0.8s ────────────────────>│                    
+         │  Texte commence         │                    
+         │                         │                    
+         1.2s ────────────────────>│                    
+         │  Logo 100% visible      │                    
+         │  Texte 80% visible      │                    
+         │                         │                    
+         1.5s ────────────────────>│                    
+                                   │  Animations        
+                                   │  infinies actives: 
+                                   │  - Rotation       
+                                   │  - Particles      
+                                   │  - Shimmer        
+                                   │  - Pulse          
+                                   │  - Progress dots  
+                                   │                   
+                                   └──────────────────>
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                          EFFETS VISUELS DÉTAILLÉS                             ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  1. GRADIENT DE FOND                                                          │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│     ████████████████████████  #0A1628 (Bleu très foncé)                      │
+│     ████████████████████████                                                 │
+│     ████████████████████████  ↓ Dégradé vertical                            │
+│     ████████████████████████                                                 │
+│     ████████████████████████  #1E3A5F (Primary Navy Blue)                    │
+│     ████████████████████████                                                 │
+│     ████████████████████████  ↓                                              │
+│     ████████████████████████                                                 │
+│     ████████████████████████  #2C5F8D (Primary Medium Blue)                  │
+│                                                                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  2. CERCLES CONCENTRIQUES                                                     │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│            ╭──────────────────────╮                                          │
+│          ╭─┤        ╭──────╮      ├─╮                                        │
+│        ╭─┤ │      ╭─┤  ╭─╮ ├─╮    │ ├─╮                                      │
+│       │  │ │     │  │  │◯│ │  │   │ │  │  - 4 cercles                       │
+│        ╰─┤ │      ╰─┤  ╰─╯ ├─╯    │ ├─╯  - Or 5% alpha                      │
+│          ╰─┤        ╰──────╯      ├─╯    - Rotation 360° / 20s              │
+│            ╰──────────────────────╯                                          │
+│                                                                               │
+│   Scale: 30%, 50%, 70%, 90% de l'écran                                       │
+│                                                                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  3. PARTICULES FLOTTANTES                                                     │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│              ●₁                                                               │
+│                          ●₅                                                   │
+│                                                                               │
+│         ●₂                          ●₄                                        │
+│                    LOGO                                                       │
+│                                  ●₃                                           │
+│                                                                               │
+│   5 particules dorées animées indépendamment                                 │
+│   Mouvement circulaire avec rayons différents                                │
+│   Vitesse: 10s à 18s par rotation                                            │
+│   Couleur: SecondaryGold 30% alpha                                           │
+│                                                                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  4. LOGO AVEC EFFETS MULTIPLES                                                │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│        ░░░░░░░░░░░░░░░░░░░░░                                                 │
+│      ░░                   ░░   Glow radial doré                              │
+│    ░░    ╭───────────╮     ░░  (40% alpha)                                   │
+│   ░░     │           │      ░░                                               │
+│  ░░      │   LOGO    │  ◉   ░░ Cercle tournant                              │
+│  ░░      │   (PNG)   │       ░░ (Or 80% alpha)                              │
+│   ░░     │  160x160  │      ░░                                               │
+│    ░░    ╰───────────╯     ░░                                                │
+│      ░░                   ░░   Animations:                                   │
+│        ░░░░░░░░░░░░░░░░░░░░░   1. Scale: 0.5 → 1.0 (bounce)                 │
+│                                2. Rotate: -180° → 0°                         │
+│                                3. Fade: 0 → 1                                │
+│                                4. Pulse: 0.95 ↔ 1.05 (infini)                │
+│                                                                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  5. TEXTE "AUREUS" AVEC SHIMMER                                               │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│                    A U R E U S                                                │
+│                    ▓▒░  ░▒▓                                                   │
+│                                                                               │
+│   Effet de brillance qui traverse le texte                                   │
+│   - Taille: 52sp                                                             │
+│   - Weight: ExtraBold                                                         │
+│   - Espacement: 6sp                                                          │
+│   - Couleur: Blanc                                                           │
+│   - Shimmer: Animation continue 2s                                           │
+│   - Alpha variable: 0.85 + shimmer (0 → 0.15)                                │
+│                                                                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  6. LIGNE DORÉE ANIMÉE                                                        │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│     ░░░░░░▓▓▓▓████▓▓▓▓░░░░░░                                                │
+│        ←─────────────→                                                       │
+│                                                                               │
+│   Effet de lumière qui traverse la ligne                                     │
+│   - Largeur: 140dp                                                           │
+│   - Hauteur: 3dp                                                             │
+│   - Gradient: Transparent → Or clair → Or → Or clair → Transparent          │
+│   - Animation: 2s en boucle                                                  │
+│                                                                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  7. INDICATEUR DE PROGRESSION                                                 │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│                    ● ● ●                                                      │
+│                    ↑ ↑ ↑                                                      │
+│                    │ │ │                                                      │
+│                    Animation en vague                                         │
+│                                                                               │
+│   3 points dorés avec:                                                        │
+│   - Taille: 10dp                                                             │
+│   - Espacement: 10dp                                                         │
+│   - Scale: 0.6 ↔ 1.2 (800ms)                                                 │
+│   - Décalage: 200ms entre chaque                                             │
+│   - Gradient radial: SecondaryGold → DarkGold                                │
+│                                                                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                        PALETTE DE COULEURS UTILISÉE                           ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+    ┌─────────────────┬──────────────┬─────────────────────────────────────┐
+    │ Élément         │ Couleur      │ Variable                            │
+    ├─────────────────┼──────────────┼─────────────────────────────────────┤
+    │ Background 1    │ #0A1628      │ Custom (Bleu très foncé)            │
+    │ Background 2    │ #1E3A5F      │ PrimaryNavyBlue                     │
+    │ Background 3    │ #2C5F8D      │ PrimaryMediumBlue                   │
+    ├─────────────────┼──────────────┼─────────────────────────────────────┤
+    │ Logo glow       │ #D4AF37 40%  │ SecondaryGold.copy(alpha = 0.4f)    │
+    │ Cercle tournant │ #D4AF37 80%  │ SecondaryGold.copy(alpha = 0.8f)    │
+    │ Cercles arrière │ #D4AF37 5%   │ SecondaryGold.copy(alpha = 0.05f)   │
+    │ Particules      │ #D4AF37 30%  │ SecondaryGold.copy(alpha = 0.3f)    │
+    ├─────────────────┼──────────────┼─────────────────────────────────────┤
+    │ Texte AUREUS    │ #FFFFFF      │ NeutralWhite                        │
+    │ Slogan          │ #D4AF37      │ SecondaryGold                       │
+    │ Sous-titre      │ #FFFFFF 80%  │ NeutralWhite.copy(alpha = 0.8f)     │
+    ├─────────────────┼──────────────┼─────────────────────────────────────┤
+    │ Ligne dorée     │ #D4AF37      │ SecondaryGold                       │
+    │ Indicateur      │ #D4AF37      │ SecondaryGold → SecondaryDarkGold   │
+    │                 │ #C89F3C      │ (Gradient)                          │
+    └─────────────────┴──────────────┴─────────────────────────────────────┘
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                          SPÉCIFICATIONS TECHNIQUES                            ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+    Durée totale:                 3.5 secondes
+    Animations d'entrée:          1.5 secondes
+    Animations infinies:          2.0 secondes
+    Frame rate cible:             60 FPS
+    
+    Logo:
+    ├─ Fichier:                   /res/drawable/logo.png
+    ├─ Taille affichée:           160dp
+    ├─ Taille recommandée:        512x512px
+    └─ Format:                    PNG avec transparence
+    
+    Effets:
+    ├─ Cercles concentriques:     4 cercles
+    ├─ Particules:                5 particules
+    ├─ Animations infinies:       7 animations
+    └─ Animations d'entrée:       4 animations
+    
+    Performance:
+    ├─ Impact CPU:                Faible
+    ├─ Impact GPU:                Faible à Moyen
+    ├─ Mémoire:                   ~5MB (avec logo)
+    └─ Optimisation:              Canvas pour dessins
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                           FLOW DE NAVIGATION                                  ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+         ┌──────────────────┐
+         │  APP DÉMARRAGE   │
+         └────────┬─────────┘
+                  │
+                  ▼
+         ┌──────────────────┐
+         │  SPLASH SCREEN   │◄─── Vous êtes ici
+         │   (3.5 secondes) │
+         └────────┬─────────┘
+                  │
+                  ▼
+         ┌──────────────────┐
+         │  Onboarding      │
+         │  complété ?      │
+         └────┬────────┬────┘
+              │        │
+         NON  │        │  OUI
+              ▼        ▼
+         ┌─────────┐  ┌─────────────┐
+         │ONBOARD  │  │ Utilisateur │
+         │ (3pages)│  │ connecté ?  │
+         └────┬────┘  └──┬────────┬─┘
+              │          │        │
+              │     NON  │        │  OUI
+              ▼          ▼        ▼
+         ┌─────────┬──────────┬────────────┐
+         │  LOGIN  │  LOGIN   │ DASHBOARD  │
+         └─────────┴──────────┴────────────┘
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                           COMPARAISON DES VERSIONS                            ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+    ┌──────────────────────┬─────────────────┬──────────────────────┐
+    │ Fonctionnalité       │ Standard        │ Advanced ⭐          │
+    ├──────────────────────┼─────────────────┼──────────────────────┤
+    │ Gradient fond        │ ✅              │ ✅ (Plus riche)      │
+    │ Animation logo       │ ✅ Scale+Fade   │ ✅ Scale+Rotate+Fade │
+    │ Glow logo            │ ✅ Simple       │ ✅ Radial animé      │
+    │ Cercle tournant      │ ❌              │ ✅                   │
+    │ Cercles arrière      │ ❌              │ ✅ (4 cercles)       │
+    │ Particules           │ ❌              │ ✅ (5 particules)    │
+    │ Effet shimmer texte  │ ❌              │ ✅                   │
+    │ Ligne animée         │ ❌              │ ✅                   │
+    │ Pulse logo           │ ❌              │ ✅                   │
+    │ Indicateur stylisé   │ ✅ Points       │ ✅ Dots avec gradient│
+    ├──────────────────────┼─────────────────┼──────────────────────┤
+    │ Nombre d'animations  │ 4               │ 10+                  │
+    │ Impact performance   �� Minimal         │ Faible               │
+    │ Recommandé pour      │ Bas de gamme    │ Moyen/Haut de gamme  │
+    └──────────────────────┴─────────────────┴──────────────────────┘
+
+
+═══════════════════════════════════════════════════════════════════════════════
+
+                    ✨ SPLASH SCREEN AUREUS - READY! ✨
+
+                    Version: Advanced (Premium)
+                    Durée: 3.5 secondes
+                    Effets: 10+ animations
+                    Performance: Optimisée
+
+═══════════════════════════════════════════════════════════════════════════════
