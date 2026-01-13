@@ -30,7 +30,6 @@ class SecureStorageManager @Inject constructor(
         MasterKey.Builder(context)
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
             .setUserAuthenticationRequired(false)
-            .setUserAuthenticationValidityDurationSeconds(-1)
             .build()
     }
 

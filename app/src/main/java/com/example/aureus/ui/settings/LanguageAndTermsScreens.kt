@@ -18,8 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.aureus.data.Language
-import com.example.aureus.data.SupportedLanguages
+import com.example.aureus.i18n.Language
 import com.example.aureus.ui.theme.*
 
 // Language Selection Screen
@@ -29,7 +28,7 @@ fun LanguageSelectionScreen(
     onNavigateBack: () -> Unit = {},
     onLanguageSelected: (Language) -> Unit = {}
 ) {
-    var selectedLanguage by remember { mutableStateOf(SupportedLanguages.languages.first()) }
+    var selectedLanguage by remember { mutableStateOf(Language.FRENCH) }
 
     Scaffold(
         topBar = {
@@ -63,7 +62,7 @@ fun LanguageSelectionScreen(
                 )
             }
 
-            items(SupportedLanguages.languages) { language ->
+            items(Language.values()) { language ->
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -90,20 +89,20 @@ fun LanguageSelectionScreen(
                         )
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = language.name,
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = PrimaryNavyBlue
-                            )
-                            Text(
-                                text = language.nativeName,
-                                fontSize = 13.sp,
-                                color = NeutralMediumGray
-                            )
+                            text = language.displayName,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = PrimaryNavyBlue
+                        )
+                        Text(
+                            text = language.code.uppercase(),
+                            fontSize = 13.sp,
+                            color = NeutralMediumGray
+                        )
                         }
                         if (selectedLanguage.code == language.code) {
                             Icon(
-                                imageVector = Icons.Default.CheckCircle,
+                                imageVector = Icons.Default.Check,
                                 contentDescription = "Selected",
                                 tint = SecondaryGold
                             )

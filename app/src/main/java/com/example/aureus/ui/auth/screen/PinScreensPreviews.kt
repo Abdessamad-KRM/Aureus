@@ -25,18 +25,15 @@ fun PinSetupScreenPreview() {
 
 // ============================================
 // PIN Verification Screen Previews
+// Note: PinVerificationDialog and PinVerificationScreen need to be created
 // ============================================
 
 @Preview(showBackground = true, showSystemUi = true, name = "PIN Verification - Full Screen")
 @Composable
 fun PinVerificationScreenPreview() {
     AureusTheme {
-        PinVerificationScreen(
-            onPinVerified = {},
-            onCancel = {},
-            title = "Confirmer le transfert",
-            subtitle = "Entrez votre code PIN pour autoriser cette transaction"
-        )
+        // TODO: Create PinVerificationScreen composable
+        androidx.compose.material3.Text("PIN Verification Preview")
     }
 }
 
@@ -44,12 +41,8 @@ fun PinVerificationScreenPreview() {
 @Composable
 fun PinVerificationDialogPreview() {
     AureusTheme {
-        PinVerificationDialog(
-            onPinVerified = {},
-            onDismiss = {},
-            title = "Confirmer l'opération",
-            subtitle = "Entrez votre code PIN de sécurité"
-        )
+        // TODO: Create PinVerificationDialog composable
+        androidx.compose.material3.Text("PIN Dialog Preview")
     }
 }
 
@@ -57,11 +50,6 @@ fun PinVerificationDialogPreview() {
 @Composable
 fun PinVerificationDialogTransactionPreview() {
     AureusTheme {
-        PinVerificationDialog(
-            onPinVerified = {},
-            onDismiss = {},
-            title = "Transfert de 5000 MAD",
-            subtitle = "Confirmez cette transaction avec votre PIN"
-        )
+        androidx.compose.material3.Text("PIN Dialog Transaction Preview")
     }
 }

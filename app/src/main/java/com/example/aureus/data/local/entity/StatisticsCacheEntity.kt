@@ -2,11 +2,8 @@ package com.example.aureus.data.local.entity
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import androidx.room.TypeConverters
-import com.example.aureus.data.local.converter.DateConverter
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import java.util.Date
 
 /**
  * Entity for caching statistics in Room database
@@ -31,30 +28,8 @@ data class StatisticsCacheEntity(
             return "${userId}_${statType}_$period"
         }
 
-        val CACHE_TTL_MS = 15 * 60 * 1000 // 15 minutes
-    }
+        val CACHE_TTL_MS = 15 * 60 * 1000L // 15 minutes
 
-    fun isExpired(): Boolean {
-        return System.currentTimeMillis() > expiresAt
-    }
-
-    /**
-     * Helper to parse JSON data to specific type
-     */
-    inline fun <reified T> parseData(): T? {
-        return try {
-            val gson = Gson()
-            val type = object : TypeToken<T>() {}.type
-            gson.fromJson(jsonData, type)
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    /**
-     * Helper to create cache entity from data
-     */
-    companion object {
         fun <T> fromData(
             userId: String,
             statType: String,
@@ -76,6 +51,23 @@ data class StatisticsCacheEntity(
             } catch (e: Exception) {
                 throw IllegalArgumentException("Failed to serialize data to JSON", e)
             }
+        }
+    }
+
+    fun isExpired(): Boolean {
+        return System.currentTimeMillis() > expiresAt
+    }
+
+    /**
+     * Helper to parse JSON data to specific type
+     */
+    inline fun <reified T> parseData(): T? {
+        return try {
+            val gson = Gson()
+            val type = object : TypeToken<T>() {}.type
+            gson.fromJson(jsonData, type)
+        } catch (e: Exception) {
+            null
         }
     }
 }

@@ -41,7 +41,14 @@ class TransferRepositoryImpl @Inject constructor(
             )
 
             val result: HttpsCallableResult = callable.call(data).await()
-            val resultMap = result.data as? Map<String, Any>
+            // Access data using reflection for compatibility
+            val resultMap = try {
+                val field = result.javaClass.getDeclaredField("data")
+                field.isAccessible = true
+                field.get(result) as? Map<String, Any>
+            } catch (e: Exception) {
+                null
+            }
 
             if (resultMap?.get("success") == true) {
                 Resource.Success(
@@ -93,7 +100,14 @@ class TransferRepositoryImpl @Inject constructor(
             )
 
             val result: HttpsCallableResult = callable.call(data).await()
-            val resultMap = result.data as? Map<String, Any>
+            // Access data using reflection for compatibility
+            val resultMap = try {
+                val field = result.javaClass.getDeclaredField("data")
+                field.isAccessible = true
+                field.get(result) as? Map<String, Any>
+            } catch (e: Exception) {
+                null
+            }
 
             if (resultMap?.get("success") == true) {
                 Resource.Success(resultMap["requestId"] as? String ?: "")
@@ -112,7 +126,14 @@ class TransferRepositoryImpl @Inject constructor(
             val data = mapOf("userId" to userId)
 
             val result: HttpsCallableResult = callable.call(data).await()
-            val resultMap = result.data as? Map<String, Any>
+            // Access data using reflection for compatibility
+            val resultMap = try {
+                val field = result.javaClass.getDeclaredField("data")
+                field.isAccessible = true
+                field.get(result) as? Map<String, Any>
+            } catch (e: Exception) {
+                null
+            }
 
             if (resultMap != null) {
                 Resource.Success(
@@ -206,7 +227,7 @@ class TransferRepositoryImpl @Inject constructor(
         return try {
             val callable = functions.getHttpsCallable("acceptMoneyRequest")
             val result: HttpsCallableResult = callable.call(mapOf("requestId" to requestId)).await()
-            val resultMap = result.data as? Map<String, Any>
+            val resultMap = result.getData() as? Map<String, Any?>
 
             if (resultMap?.get("success") == true) {
                 Resource.Success(resultMap["message"] as? String ?: "Demande acceptée")

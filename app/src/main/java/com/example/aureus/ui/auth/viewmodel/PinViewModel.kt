@@ -3,6 +3,7 @@ package com.example.aureus.ui.auth.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.aureus.data.firestore.PinFirestoreManager
+import com.example.aureus.domain.model.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,6 +28,9 @@ class PinViewModel @Inject constructor(
 
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
+
+    private val _pinState = MutableStateFlow<Resource<Unit>>(Resource.Idle)
+    val pinState: StateFlow<Resource<Unit>> = _pinState.asStateFlow()
 
     /**
      * ✅ Vérifier le PIN - fonction suspend pure
@@ -67,5 +71,21 @@ class PinViewModel @Inject constructor(
     fun reset() {
         _verificationResult.value = null
         _errorMessage.value = null
+        _pinState.value = Resource.Idle
+    }
+
+    /**
+     * Sauvegarder le PIN
+     */
+    fun savePin(pin: String) {
+        viewModelScope.launch {
+            _pinState.value = Resource.Loading
+            try {
+                pinFirestoreManager.savePin(pin)
+                _pinState.value = Resource.Success(Unit)
+            } catch (e: Exception) {
+                _pinState.value = Resource.Error(e.message ?: "Erreur lors de la sauvegarde", e)
+            }
+        }
     }
 }

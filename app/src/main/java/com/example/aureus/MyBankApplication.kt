@@ -13,10 +13,8 @@ import androidx.work.WorkManager
 import com.example.aureus.notification.NotificationHelper
 import com.example.aureus.data.offline.FirebaseSyncWorker
 import com.example.aureus.util.SharedPreferencesManager
-import com.example.aureus.BuildConfig
 import com.google.firebase.FirebaseApp
 import com.google.firebase.appcheck.FirebaseAppCheck
-import com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory
 import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.messaging.ktx.messaging
@@ -85,12 +83,26 @@ class MyBankApplication : Application(), Configuration.Provider {
     private fun setupFirebaseAppCheck() {
         val appCheck = FirebaseAppCheck.getInstance()
 
-        if (BuildConfig.DEBUG) {
-            // Debug: DebugAppCheckFactory (permet les requêtes de debug)
-            appCheck.installAppCheckProviderFactory(
-                DebugAppCheckProviderFactory.getInstance()
-            )
-            android.util.Log.d("MyBankApplication", "Firebase App Check initialized in DEBUG mode")
+        // Check if we're in debug mode using ApplicationInfo flags
+        val isDebuggable = (applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
+
+        if (isDebuggable) {
+            // Debug: Use debug app check factory (allows debug requests)
+            try {
+                val debugFactoryClass = Class.forName("com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory")
+                val getInstanceMethod = debugFactoryClass.getMethod("getInstance")
+                val factory = getInstanceMethod.invoke(null)
+                val installMethod = FirebaseAppCheck::class.java.getMethod("installAppCheckProviderFactory", Class.forName("com.google.firebase.appcheck.FirebaseAppCheckProviderFactory"))
+                installMethod.invoke(appCheck, factory)
+                android.util.Log.d("MyBankApplication", "Firebase App Check initialized in DEBUG mode")
+            } catch (e: Exception) {
+                android.util.Log.w("MyBankApplication", "Failed to initialize debug App Check, using Play Integrity", e)
+                // Fallback to Play Integrity
+                appCheck.installAppCheckProviderFactory(
+                    PlayIntegrityAppCheckProviderFactory.getInstance()
+                )
+                android.util.Log.d("MyBankApplication", "Firebase App Check initialized in RELEASE mode (fallback)")
+            }
         } else {
             // Release: Play Integrity provider
             appCheck.installAppCheckProviderFactory(

@@ -15,15 +15,16 @@ import androidx.room.Index
             entity = AccountEntity::class,
             parentColumns = ["id"],
             childColumns = ["accountId"],
-            onDelete = ForeignKey.CASCADE
+            onDelete = ForeignKey.NO_ACTION,  // Changed from CASCADE to prevent cascading deletions
+            onUpdate = ForeignKey.NO_ACTION
         )
     ],
-    indices = [Index("accountId"), Index("date"), Index("type")]
+    indices = [Index("accountId"), Index("date"), Index("type"), Index("userId")]
 )
 data class TransactionEntity(
     @PrimaryKey
     val id: String,
-    val accountId: String,
+    val accountId: String,  // Made non-nullable but FK constraint relaxed
     val userId: String? = null, // Added userId for better sync management
     val type: String, // "CREDIT" or "DEBIT"
     val amount: Double,

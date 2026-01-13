@@ -43,7 +43,7 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions WHERE userId = :userId AND is_pending_upload = 1")
     suspend fun getPendingTransactions(userId: String): List<TransactionEntity>
 
-    @Query("UPDATE transactions SET lastSyncedAt = :timestamp WHERE lastSyncedAt > 0")
+    @Query("UPDATE transactions SET lastSyncedAt = :timestamp WHERE userId = :userId AND lastSyncedAt > 0")
     suspend fun invalidateCache(userId: String, timestamp: Long)
 
     @Query("DELETE FROM transactions WHERE id = :transactionId")

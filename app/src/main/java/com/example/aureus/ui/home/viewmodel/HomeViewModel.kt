@@ -102,53 +102,79 @@ class HomeViewModel @Inject constructor(
         _uiState.update { it.copy(isLoading = true, isOfflineMode = false) }
 
         viewModelScope.launch {
-            // Tracker si tous les chargements sont terminés ✅
-            var userLoaded = false
-            var cardsLoaded = false
-            var balanceLoaded = false
+            try {
+                // Tracker si tous les chargements sont terminés ✅
+                var userLoaded = false
+                var cardsLoaded = false
+                var balanceLoaded = false
 
-            // Charger l'utilisateur avec async (lazy loading)
-            userDataDeferred = async {
-                firebaseDataManager.getUser(userId).collect { userData ->
-                    userData?.let {
-                        _uiState.update { state ->
-                            state.copy(user = it)
+                // Charger l'utilisateur avec async (lazy loading)
+                userDataDeferred = async {
+                    try {
+                        firebaseDataManager.getUser(userId).collect { userData ->
+                            userData?.let {
+                                _uiState.update { state ->
+                                    state.copy(user = it)
+                                }
+                                userLoaded = true
+                                checkAllDataLoaded(userLoaded, cardsLoaded, balanceLoaded)
+                            }
                         }
-                        userLoaded = true
+                    } catch (e: Exception) {
+                        android.util.Log.e("HomeViewModel", "Error loading user data", e)
+                        userLoaded = true // Marquer comme chargé pour ne pas bloquer
                         checkAllDataLoaded(userLoaded, cardsLoaded, balanceLoaded)
                     }
                 }
-            }
 
-            // Charger les cartes avec async (lazy loading)
-            cardsDataDeferred = async {
-                firebaseDataManager.getUserCards(userId).collect { cards ->
-                    _uiState.update { state ->
-                        val defaultCard = cards.firstOrNull {
-                            (it["isDefault"] as? Boolean) == true
-                        } ?: cards.firstOrNull()
-                        state.copy(
-                            cards = cards,
-                            defaultCard = defaultCard
-                        )
+                // Charger les cartes avec async (lazy loading)
+                cardsDataDeferred = async {
+                    try {
+                        firebaseDataManager.getUserCards(userId).collect { cards ->
+                            _uiState.update { state ->
+                                val defaultCard = cards.firstOrNull {
+                                    (it["isDefault"] as? Boolean) == true
+                                } ?: cards.firstOrNull()
+                                state.copy(
+                                    cards = cards,
+                                    defaultCard = defaultCard
+                                )
+                            }
+                            cardsLoaded = true
+                            checkAllDataLoaded(userLoaded, cardsLoaded, balanceLoaded)
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.e("HomeViewModel", "Error loading cards data", e)
+                        cardsLoaded = true
+                        checkAllDataLoaded(userLoaded, cardsLoaded, balanceLoaded)
                     }
-                    cardsLoaded = true
-                    checkAllDataLoaded(userLoaded, cardsLoaded, balanceLoaded)
                 }
-            }
 
-            // Charger le solde total avec async (lazy loading)
-            transactionsDataDeferred = async {
-                firebaseDataManager.getUserTotalBalance(userId).collect { balance ->
-                    _totalBalanceState.value = Resource.Success(balance)
-                    _uiState.update { it.copy(totalBalance = balance) }
-                    balanceLoaded = true
-                    checkAllDataLoaded(userLoaded, cardsLoaded, balanceLoaded)
+                // Charger le solde total avec async (lazy loading)
+                transactionsDataDeferred = async {
+                    try {
+                        firebaseDataManager.getUserTotalBalance(userId).collect { balance ->
+                            _totalBalanceState.value = Resource.Success(balance)
+                            _uiState.update { it.copy(totalBalance = balance) }
+                            balanceLoaded = true
+                            checkAllDataLoaded(userLoaded, cardsLoaded, balanceLoaded)
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.e("HomeViewModel", "Error loading balance data", e)
+                        balanceLoaded = true
+                        _totalBalanceState.value = Resource.Success(0.0)
+                        checkAllDataLoaded(userLoaded, cardsLoaded, balanceLoaded)
+                    }
                 }
-            }
 
-            // Charger les transactions récentes de manière lazy
-            lazyLoadRecentTransactions(userId)
+                // Charger les transactions récentes de manière lazy
+                lazyLoadRecentTransactions(userId)
+            } catch (e: Exception) {
+                android.util.Log.e("HomeViewModel", "Error in loadFromFirebase", e)
+                _uiState.update { it.copy(isLoading = false, error = "Failed to load data") }
+                // Fallback: charger depuis offline cache
+                loadFromOfflineCache(userId)
+            }
         }
     }
 
@@ -166,8 +192,14 @@ class HomeViewModel @Inject constructor(
      */
     private fun lazyLoadRecentTransactions(userId: String) {
         viewModelScope.launch {
-            firebaseDataManager.getRecentTransactions(userId, 5).collect { transactions ->
-                _uiState.update { it.copy(recentTransactions = transactions) }
+            try {
+                firebaseDataManager.getRecentTransactions(userId, 5).collect { transactions ->
+                    _uiState.update { it.copy(recentTransactions = transactions) }
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("HomeViewModel", "Error loading recent transactions", e)
+                // Don't block UI, use empty list
+                _uiState.update { it.copy(recentTransactions = emptyList()) }
             }
         }
     }
@@ -179,86 +211,93 @@ class HomeViewModel @Inject constructor(
         _uiState.update { it.copy(isLoading = true, isOfflineMode = true) }
 
         viewModelScope.launch {
-            // Load user data from cache (if available)
-            // Note: User is not stored in Room, so we'll use cached data
+            try {
+                // Load user data from cache (if available)
+                // Note: User is not stored in Room, so we'll use cached data
 
-            // Tracker si tous les chargements sont terminés ✅
-            var cardsLoaded = false
-            var transactionsLoaded = false
+                // Tracker si tous les chargements sont terminés ✅
+                var cardsLoaded = false
+                var transactionsLoaded = false
 
-            // Charger les cartes depuis Room avec async (lazy loading)
-            cardsDataDeferred = async {
-                database.cardDao().getActiveCards(userId).collect { cardEntities ->
-                    val cards = cardEntities.map { entity ->
-                        mapOf(
-                            "cardId" to entity.id,
-                            "userId" to entity.userId,
-                            "accountId" to entity.accountId,
-                            "cardNumber" to entity.cardNumber,
-                            "cardHolder" to entity.cardHolder,
-                            "expiryDate" to entity.expiryDate,
-                            "cardType" to entity.cardType,
-                            "cardColor" to entity.cardColor,
-                            "isDefault" to entity.isDefault,
-                            "isActive" to entity.isActive,
-                            "dailyLimit" to entity.dailyLimit,
-                            "monthlyLimit" to entity.monthlyLimit
-                        )
+                // Charger les cartes depuis Room avec async (lazy loading)
+                cardsDataDeferred = async {
+                    try {
+                        database.cardDao().getActiveCards(userId).collect { cardEntities ->
+                            val cards = cardEntities.map { entity ->
+                                mapOf(
+                                    "cardId" to entity.id,
+                                    "userId" to entity.userId,
+                                    "accountId" to entity.accountId,
+                                    "cardNumber" to entity.cardNumber,
+                                    "cardHolder" to entity.cardHolder,
+                                    "expiryDate" to entity.expiryDate,
+                                    "cardType" to entity.cardType,
+                                    "cardColor" to entity.cardColor,
+                                    "isDefault" to entity.isDefault,
+                                    "isActive" to entity.isActive,
+                                    "dailyLimit" to entity.dailyLimit,
+                                    "monthlyLimit" to entity.monthlyLimit
+                                )
+                            }
+                            val defaultCard = cards.firstOrNull {
+                                (it["isDefault"] as? Boolean) == true
+                            } ?: cards.firstOrNull()
+                            _uiState.update { state ->
+                                state.copy(
+                                    cards = cards,
+                                    defaultCard = defaultCard
+                                )
+                            }
+                            cardsLoaded = true
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.e("HomeViewModel", "Error loading cards from cache", e)
+                        cardsLoaded = true
+                        checkAllDataOfflineLoaded(cardsLoaded, transactionsLoaded)
                     }
-                    val defaultCard = cards.firstOrNull {
-                        (it["isDefault"] as? Boolean) == true
-                    } ?: cards.firstOrNull()
-                    _uiState.update { state ->
-                        state.copy(
-                            cards = cards,
-                            defaultCard = defaultCard
-                        )
-                    }
-                    cardsLoaded = true
-                    checkOfflineDataLoaded(cardsLoaded, transactionsLoaded)
                 }
-            }
 
-            // Charger les transactionsDepuis Room avec lazy loading
-            transactionsDataDeferred = async {
-                database.transactionDao().getTransactionsById(userId).collect { transactionEntities ->
-                    val transactions: List<Map<String, Any>> = transactionEntities.map { entity ->
-                        mapOf<String, Any>(
-                            "transactionId" to (entity.id as Any),
-                            "userId" to (entity.userId as Any),
-                            "accountId" to (entity.accountId as Any),
-                            "type" to (entity.type as Any),
-                            "category" to (entity.category as Any),
-                            "title" to (entity.description as Any),
-                            "description" to (entity.description as Any),
-                            "amount" to (entity.amount as Any),
-                            "merchant" to ((entity.merchant ?: "") as Any),
-                            "date" to ((entity.date ?: System.currentTimeMillis()) as Any),
-                            "balanceAfter" to ((entity.balanceAfter ?: 0.0) as Any)
-                        )
+                // Charger les transactions depuis Room avec async (lazy loading)
+                transactionsDataDeferred = async {
+                    try {
+                        database.transactionDao().getTransactionsById(userId).collect { transactionEntities ->
+                            val transactions = transactionEntities.take(5).map { entity ->
+                                mapOf<String, Any>(
+                                    "transactionId" to entity.id,
+                                    "userId" to (entity.userId ?: ""),
+                                    "accountId" to entity.accountId,
+                                    "type" to entity.type,
+                                    "amount" to entity.amount,
+                                    "description" to entity.description,
+                                    "category" to (entity.category ?: ""),
+                                    "merchant" to (entity.merchant ?: ""),
+                                    "date" to entity.date,
+                                    "balanceAfter" to entity.balanceAfter,
+                                    "isSynced" to entity.isSynced
+                                )
+                            }
+                            _uiState.update { it.copy(recentTransactions = transactions) }
+                            transactionsLoaded = true
+                            checkAllDataOfflineLoaded(cardsLoaded, transactionsLoaded)
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.e("HomeViewModel", "Error loading transactions from cache", e)
+                        transactionsLoaded = true
+                        _uiState.update { it.copy(recentTransactions = emptyList()) }
+                        checkAllDataOfflineLoaded(cardsLoaded, transactionsLoaded)
                     }
-                    _uiState.update { it.copy(recentTransactions = transactions.take(5)) }
-
-                    // Calculate total balance from transactions
-                    val income = transactionEntities.filter { it.type == "CREDIT" || it.type == "INCOME" }
-                        .sumOf { it.amount }
-                    val expense = transactionEntities.filter { it.type == "DEBIT" || it.type == "EXPENSE" }
-                        .sumOf { it.amount }
-                    val balance = income - expense
-                    _totalBalanceState.value = Resource.Success(balance)
-                    _uiState.update { it.copy(totalBalance = balance) }
-
-                    transactionsLoaded = true
-                    checkOfflineDataLoaded(cardsLoaded, transactionsLoaded)
                 }
+            } catch (e: Exception) {
+                android.util.Log.e("HomeViewModel", "Error in loadFromOfflineCache", e)
+                _uiState.update { it.copy(isLoading = false, error = "Failed to load offline data") }
             }
         }
     }
 
     /**
-     * Vérifie si toutes les données offline sont chargées ✅
+     * Vérifie si toutes les données offline sont chargées et met à jour isLoading
      */
-    private fun checkOfflineDataLoaded(cardsLoaded: Boolean, transactionsLoaded: Boolean) {
+    private fun checkAllDataOfflineLoaded(cardsLoaded: Boolean, transactionsLoaded: Boolean) {
         if (cardsLoaded && transactionsLoaded) {
             _uiState.update { it.copy(isLoading = false) }
         }

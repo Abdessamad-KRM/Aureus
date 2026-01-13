@@ -38,11 +38,12 @@ android {
         }
     }
 
-    // Phase 15: Performance Optimization - Compiler options for better performance
+    // Compiler options
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+    
     kotlinOptions {
         jvmTarget = "11"
         // Enable Compose compiler reports for performance analysis
@@ -51,16 +52,19 @@ android {
             "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi"
         )
     }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    }
-    kotlinOptions {
-        jvmTarget = "11"
-    }
+    
     buildFeatures {
         compose = true
+        buildConfig = true
     }
+}
+
+// Room schema export directory
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+    // Disable KSP incremental processing to avoid cache corruption
+    arg("incremental", "false")
+    arg("incremental.module", "false")
 }
 
 dependencies {
@@ -142,6 +146,7 @@ dependencies {
     // ✅ PHASE 1: Firebase App Check - Protection API Key
     implementation("com.google.firebase:firebase-appcheck:18.0.0")
     implementation("com.google.firebase:firebase-appcheck-playintegrity:18.0.0")
+    debugImplementation("com.google.firebase:firebase-appcheck-debug:18.0.0")
 
     // Firebase Crashlytics (Crash Reporting) - PHASE 11: Analytics & Monitoring
     implementation("com.google.firebase:firebase-crashlytics-ktx")

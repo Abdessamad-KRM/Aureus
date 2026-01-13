@@ -15,9 +15,14 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.channels.ProducerScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
@@ -200,19 +205,39 @@ class FirebaseDataManager @Inject constructor(
      * Obtenir toutes les cartes d'un utilisateur en temps réel
      */
     fun getUserCards(userId: String): Flow<List<Map<String, Any>>> = callbackFlow {
+        // Track the fallback listener to remove it when closing
+        var fallbackListener: com.google.firebase.firestore.ListenerRegistration? = null
+
         val listener = cardsCollection
             .whereEqualTo("userId", userId)
             .whereEqualTo("isActive", true)
             .orderBy("isDefault", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
-                    close(error)
+                    // Log the error but don't crash - fallback to simple query
+                    android.util.Log.w("FirebaseDataManager", "Error loading cards (may need Firestore index): ${error.message}, using fallback")
+                    // Try fallback query without orderBy
+                    fallbackListener = cardsCollection
+                        .whereEqualTo("userId", userId)
+                        .whereEqualTo("isActive", true)
+                        .addSnapshotListener { fallbackSnapshot, fallbackError ->
+                            if (fallbackError != null) {
+                                android.util.Log.e("FirebaseDataManager", "Fallback query also failed", fallbackError)
+                                trySend(emptyList())
+                                return@addSnapshotListener
+                            }
+                            val cards = fallbackSnapshot?.documents?.mapNotNull { it.data } ?: emptyList()
+                            trySend(cards)
+                        }
                     return@addSnapshotListener
                 }
                 val cards = snapshot?.documents?.mapNotNull { it.data } ?: emptyList()
                 trySend(cards)
             }
-        awaitClose { listener.remove() }
+        awaitClose {
+            listener.remove()
+            fallbackListener?.remove()
+        }
     }
 
     /**
@@ -346,26 +371,92 @@ class FirebaseDataManager @Inject constructor(
      * C'est CRUCIAL pour les charts dynamiques !
      */
     fun getUserTransactions(userId: String, limit: Int = 50): Flow<List<Map<String, Any>>> = callbackFlow {
-        val listener = transactionsCollection
-            .whereEqualTo("userId", userId)
-            .orderBy("createdAt", Query.Direction.DESCENDING)
-            .limit(limit.toLong())
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    close(error)
-                    return@addSnapshotListener
+        // Track the fallback listener to remove it when closing
+        var fallbackListener: com.google.firebase.firestore.ListenerRegistration? = null
+
+        try {
+            val listener = transactionsCollection
+                .whereEqualTo("userId", userId)
+                .orderBy("createdAt", Query.Direction.DESCENDING)
+                .limit(limit.toLong())
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        // Log the error but don't crash - fallback to simple query
+                        android.util.Log.w("FirebaseDataManager", "Error loading transactions (may need Firestore index): ${error.message}, using fallback")
+                        // Try fallback query with client-side sorting
+                        fallbackListener = transactionsCollection
+                            .whereEqualTo("userId", userId)
+                            .limit(limit.toLong())
+                            .addSnapshotListener { fallbackSnapshot, fallbackError ->
+                                if (fallbackError != null) {
+                                    android.util.Log.e("FirebaseDataManager", "Fallback query also failed", fallbackError)
+                                    trySend(emptyList())
+                                    return@addSnapshotListener
+                                }
+                                val transactions = fallbackSnapshot?.documents?.mapNotNull { it.data } ?: emptyList()
+                                // Sort client-side by createdAt descending
+                                val sortedTransactions = transactions.sortedByDescending { doc ->
+                                    val createdAt = doc["createdAt"]
+                                    when (createdAt) {
+                                        is com.google.firebase.Timestamp -> createdAt.toDate().time
+                                        is java.util.Date -> createdAt.time
+                                        else -> System.currentTimeMillis()
+                                    }
+                                }
+                                trySend(sortedTransactions)
+                            }
+                        return@addSnapshotListener
+                    }
+                    val transactions = snapshot?.documents?.mapNotNull { it.data } ?: emptyList()
+                    trySend(transactions)
                 }
-                val transactions = snapshot?.documents?.mapNotNull { it.data } ?: emptyList()
-                trySend(transactions)
+            awaitClose {
+                listener.remove()
+                fallbackListener?.remove()
             }
-        awaitClose { listener.remove() }
+        } catch (e: Exception) {
+            // Handle index requirement errors during listener registration
+            android.util.Log.e("FirebaseDataManager", "Failed to register transactions listener: ${e.message}", e)
+            // Use fallback immediately
+            fallbackListener = transactionsCollection
+                .whereEqualTo("userId", userId)
+                .limit(limit.toLong())
+                .addSnapshotListener { fallbackSnapshot, fallbackError ->
+                    if (fallbackError != null) {
+                        android.util.Log.e("FirebaseDataManager", "Fallback query failed", fallbackError)
+                        trySend(emptyList())
+                        return@addSnapshotListener
+                    }
+                    val transactions = fallbackSnapshot?.documents?.mapNotNull { it.data } ?: emptyList()
+                    val sortedTransactions = transactions.sortedByDescending { doc ->
+                        val createdAt = doc["createdAt"]
+                        when (createdAt) {
+                            is com.google.firebase.Timestamp -> createdAt.toDate().time
+                            is java.util.Date -> createdAt.time
+                            else -> System.currentTimeMillis()
+                        }
+                    }
+                    trySend(sortedTransactions)
+                }
+            awaitClose {
+                fallbackListener?.remove()
+            }
+        }
+    }.catch { e ->
+        // Catch any errors that propagate from the Flow and log them
+        android.util.Log.e("FirebaseDataManager", "Error in getUserTransactions Flow: ${e.message}", e)
+        // Return empty list instead of crashing
+        emitAll(flowOf(emptyList()))
     }
 
     /**
      * Obtenir les récentes transactions (pour HomeScreen)
      */
     fun getRecentTransactions(userId: String, limit: Int = 10): Flow<List<Map<String, Any>>> =
-        getUserTransactions(userId, limit)
+        getUserTransactions(userId, limit).catch { e ->
+            android.util.Log.e("FirebaseDataManager", "Error in getRecentTransactions: ${e.message}", e)
+            emit(emptyList())
+        }
 
     /**
      * Créer une nouvelle transaction avec timeout (Phase 3)
@@ -488,7 +579,8 @@ class FirebaseDataManager @Inject constructor(
             .whereLessThanOrEqualTo("createdAt", endDate)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
-                    close(error)
+                    android.util.Log.e("FirebaseDataManager", "Error in getTransactionsByCategory: ${error.message}", error)
+                    trySend(emptyMap())
                     return@addSnapshotListener
                 }
 
@@ -502,6 +594,9 @@ class FirebaseDataManager @Inject constructor(
                 trySend(categoryTotals)
             }
         awaitClose { listener.remove() }
+    }.catch { e ->
+        android.util.Log.e("FirebaseDataManager", "Error in getTransactionsByCategory Flow: ${e.message}", e)
+        emit(emptyMap())
     }
 
     /**
@@ -515,7 +610,8 @@ class FirebaseDataManager @Inject constructor(
             .whereGreaterThanOrEqualTo("createdAt", startDate)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
-                    close(error)
+                    android.util.Log.e("FirebaseDataManager", "Error in getMonthlyStatistics: ${error.message}", error)
+                    trySend(emptyList())
                     return@addSnapshotListener
                 }
 
@@ -550,6 +646,9 @@ class FirebaseDataManager @Inject constructor(
                 trySend(result)
             }
         awaitClose { listener.remove() }
+    }.catch { e ->
+        android.util.Log.e("FirebaseDataManager", "Error in getMonthlyStatistics Flow: ${e.message}", e)
+        emit(emptyList())
     }
 
     // ==================== ACCOUNTS OPERATIONS ====================
@@ -563,7 +662,8 @@ class FirebaseDataManager @Inject constructor(
             .whereEqualTo("isActive", true)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
-                    close(error)
+                    android.util.Log.e("FirebaseDataManager", "Error in getUserTotalBalance: ${error.message}", error)
+                    trySend(0.0)
                     return@addSnapshotListener
                 }
 
@@ -574,6 +674,9 @@ class FirebaseDataManager @Inject constructor(
                 trySend(totalBalance)
             }
         awaitClose { listener.remove() }
+    }.catch { e ->
+        android.util.Log.e("FirebaseDataManager", "Error in getUserTotalBalance Flow: ${e.message}", e)
+        emit(0.0)
     }
 
     // ==================== VALIDATION & SECURITY (PHASE 8) ====================

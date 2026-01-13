@@ -21,7 +21,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.style.TextAlign
 import androidx.hilt.navigation.compose.hiltViewModel
+import dagger.hilt.android.EntryPointAccessors
+import com.example.aureus.di.LanguageManagerEntryPoint
+import com.example.aureus.di.ThemeManagerEntryPoint
 import com.example.aureus.domain.model.User
+import androidx.compose.ui.platform.LocalContext
 import com.example.aureus.ui.profile.viewmodel.ProfileViewModel
 import com.example.aureus.ui.theme.*
 import com.example.aureus.ui.components.ThemeToggle
@@ -214,10 +218,22 @@ fun SettingsScreen(
     onCategories: () -> Unit = {},
     onContacts: () -> Unit = {},
     onLogout: () -> Unit = {},
-    viewModel: ProfileViewModel = hiltViewModel(),
-    themeManager: ThemeManager,
-    languageManager: LanguageManager = hiltViewModel()
+    viewModel: ProfileViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
+    val themeManager = remember {
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            ThemeManagerEntryPoint::class.java
+        ).themeManager()
+    }
+    val languageManager = remember {
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            LanguageManagerEntryPoint::class.java
+        ).languageManager()
+    }
+
     val currentUser by viewModel.currentUser.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val successMessage by viewModel.successMessage.collectAsState()

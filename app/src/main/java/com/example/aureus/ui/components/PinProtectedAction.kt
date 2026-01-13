@@ -1,9 +1,17 @@
 package com.example.aureus.ui.components
 
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.Modifier
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.aureus.ui.auth.screen.PinVerificationDialog
+import androidx.lifecycle.viewModelScope
 import com.example.aureus.ui.auth.viewmodel.PinViewModel
+import kotlinx.coroutines.launch
 
 /**
  * ✅ PHASE 1 CORRECTION: Composable wrapper pour PIN-protected actions
@@ -50,45 +58,45 @@ fun PinProtectedAction(
     }
 
     if (showDialog) {
-        androidx.compose.material3.AlertDialog(
+        AlertDialog(
             onDismissRequest = {
                 if (!loading) onDismiss()
             },
-            title = { androidx.compose.material3.Text(title) },
+            title = { Text(title) },
             text = {
-                androidx.compose.foundation.layout.Column {
-                    androidx.compose.material3.Text(subtitle, style = androidx.compose.material3.MaterialTheme.typography.bodyMedium)
-                    androidx.compose.foundation.layout.Spacer(modifier = androidx.compose.foundation.layout.height(16.dp))
+                Column {
+                    Text(subtitle, style = MaterialTheme.typography.bodyMedium)
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                    androidx.compose.material3.OutlinedTextField(
+                    OutlinedTextField(
                         value = pin,
                         onValueChange = { if (it.length <= 4) pin = it },
-                        placeholder = { androidx.compose.material3.Text("••••") },
-                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                            keyboardType = androidx.compose.ui.text.input.KeyboardType.NumberPassword
+                        placeholder = { Text("••••") },
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.NumberPassword
                         ),
-                        visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
-                        modifier = androidx.compose.foundation.layout.fillMaxWidth(),
+                        visualTransformation = PasswordVisualTransformation(),
+                        modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
 
                     if (viewModel.errorMessage.value != null) {
-                        androidx.compose.foundation.layout.Spacer(modifier = androidx.compose.foundation.layout.height(8.dp))
-                        androidx.compose.material3.Text(
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
                             viewModel.errorMessage.value!!,
-                            color = androidx.compose.material3.MaterialTheme.colorScheme.error,
-                            style = androidx.compose.material3.MaterialTheme.typography.bodySmall
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
                         )
                     }
 
                     if (loading) {
-                        androidx.compose.foundation.layout.Spacer(modifier = androidx.compose.foundation.layout.height(8.dp))
-                        androidx.compose.material3.LinearProgressIndicator()
+                        Spacer(modifier = Modifier.height(8.dp))
+                        LinearProgressIndicator()
                     }
                 }
             },
             confirmButton = {
-                androidx.compose.material3.Button(
+                Button(
                     onClick = {
                         if (pin.length == 4 && !loading) {
                             loading = true
@@ -106,21 +114,21 @@ fun PinProtectedAction(
                     enabled = pin.length == 4 && !loading
                 ) {
                     if (loading) {
-                        androidx.compose.material3.CircularProgressIndicator(
-                            modifier = androidx.compose.foundation.layout.size(16.dp),
-                            color = androidx.compose.material3.MaterialTheme.colorScheme.onPrimary
+                        CircularProgressIndicator(
+                            modifier = androidx.compose.ui.Modifier.size(16.dp),
+                            color = MaterialTheme.colorScheme.onPrimary
                         )
                     } else {
-                        androidx.compose.material3.Text("Confirmer")
+                        Text("Confirmer")
                     }
                 }
             },
             dismissButton = {
-                androidx.compose.material3.TextButton(
+                TextButton(
                     onClick = { if (!loading) onDismiss() },
                     enabled = !loading
                 ) {
-                    androidx.compose.material3.Text("Annuler")
+                    Text("Annuler")
                 }
             }
         )

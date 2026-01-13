@@ -1,6 +1,7 @@
 package com.example.aureus.performance
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -96,8 +97,6 @@ fun rememberLifecycleAwareResource(
 
     return resourceInstance
 }
-
-import androidx.compose.runtime.DisposableEffect
 
 /**
  * Prevent unnecessary recomposition by using derived state

@@ -6,6 +6,7 @@ import com.example.aureus.data.local.AppDatabase
 import com.example.aureus.data.local.dao.AccountDao
 import com.example.aureus.data.local.dao.CardDao
 import com.example.aureus.data.local.dao.ContactDao
+import com.example.aureus.data.local.dao.StatisticsCacheDao
 import com.example.aureus.data.local.dao.TransactionDao
 import com.example.aureus.data.local.dao.UserDao
 import com.example.aureus.data.offline.NetworkMonitor
@@ -105,6 +106,12 @@ object AppModule {
     @Singleton
     fun provideContactDao(database: AppDatabase): ContactDao {
         return database.contactDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideStatisticsCacheDao(database: AppDatabase): StatisticsCacheDao {
+        return database.statisticsCacheDao()
     }
 
     @Provides
@@ -272,9 +279,10 @@ object AppModule {
     @Singleton
     fun provideStatisticRepository(
         transactionRepositoryFirebase: TransactionRepositoryFirebase,
-        firebaseDataManager: FirebaseDataManager
+        firebaseDataManager: FirebaseDataManager,
+        statisticsCacheDao: StatisticsCacheDao
     ): StatisticRepository {
-        return StatisticRepositoryImpl(transactionRepositoryFirebase, firebaseDataManager)
+        return StatisticRepositoryImpl(transactionRepositoryFirebase, firebaseDataManager, statisticsCacheDao)
     }
 
     @Provides

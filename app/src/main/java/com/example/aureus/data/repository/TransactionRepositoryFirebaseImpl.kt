@@ -6,6 +6,9 @@ import com.example.aureus.domain.model.Transaction
 import com.example.aureus.domain.model.TransactionType
 import com.example.aureus.domain.repository.TransactionRepositoryFirebase
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -173,6 +176,10 @@ class TransactionRepositoryFirebaseImpl @Inject constructor(
                     !transactionDate.after(endDate)
                 }
                 .take(limit)
+        }.catch { e ->
+            // Handle errors gracefully - emit empty list on error
+            android.util.Log.e("TransactionRepositoryFirebaseImpl", "Error: ${e.message}", e)
+            emitAll(flowOf(emptyList()))
         }
     }
 

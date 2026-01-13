@@ -26,6 +26,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.ui.platform.LocalContext
 import com.example.aureus.domain.model.Resource
 import com.example.aureus.security.RegisterCredentials
 import com.example.aureus.security.SecureCredentialManager
@@ -33,6 +34,8 @@ import com.example.aureus.ui.auth.model.Country
 import com.example.aureus.ui.auth.model.countries
 import com.example.aureus.ui.auth.viewmodel.AuthViewModel
 import com.example.aureus.ui.theme.*
+import dagger.hilt.android.EntryPointAccessors
+import com.example.aureus.di.SecureCredentialManagerEntryPoint
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -44,10 +47,19 @@ import kotlinx.coroutines.launch
 @Composable
 fun RegisterScreen(
     viewModel: AuthViewModel = hiltViewModel(),
-    credentialManager: SecureCredentialManager = hiltViewModel(),
     onRegisterSuccess: (phoneNumber: String) -> Unit,
     onNavigateToLogin: () -> Unit
 ) {
+    val context = LocalContext.current
+
+    // Properly inject SecureCredentialManager singleton through Hilt EntryPoint
+    val credentialManager = remember {
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            SecureCredentialManagerEntryPoint::class.java
+        ).secureCredentialManager()
+    }
+
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var firstName by remember { mutableStateOf("") }
@@ -70,17 +82,26 @@ fun RegisterScreen(
     var lastTapTime by remember { mutableLongStateOf(0) }
     var autoFillTriggered by remember { mutableStateOf(false) }
 
-    // Auto-sauvegarde après register réussi
+    // Auto-sauvegarde et navigation après register réussi
     LaunchedEffect(registerState) {
-        if (registerState is Resource.Success && email.isNotBlank() && password.isNotBlank()) {
-            delay(500)
-            credentialManager.saveRegisterCredentials(
-                email = email,
-                password = password,
-                firstName = firstName,
-                lastName = lastName,
-                phone = if (phone.isNotBlank()) "${selectedCountry.dialCode}$phone" else ""
-            )
+        when (val state = registerState) {
+            is Resource.Success -> {
+                // Auto-sauvegarde des crédentials
+                if (email.isNotBlank() && password.isNotBlank()) {
+                    delay(500)
+                    credentialManager.saveRegisterCredentials(
+                        email = email,
+                        password = password,
+                        firstName = firstName,
+                        lastName = lastName,
+                        phone = if (phone.isNotBlank()) "${selectedCountry.dialCode}$phone" else ""
+                    )
+                }
+                // Navigate vers SMS verification
+                val fullPhone = if (phone.isNotBlank()) "${selectedCountry.dialCode}$phone" else ""
+                onRegisterSuccess(fullPhone)
+            }
+            else -> {}
         }
     }
 
@@ -133,19 +154,20 @@ fun RegisterScreen(
         }
     }
 
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .background(NeutralLightGray)
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onTap = { _ -> handleScreenTap() }
-                )
-            }
     ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
+                .weight(1f)
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onTap = { _ -> handleScreenTap() }
+                    )
+                }
                 .verticalScroll(scrollState)
                 .padding(horizontal = 24.dp)
                 .padding(top = 80.dp, bottom = 32.dp),

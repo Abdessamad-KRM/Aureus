@@ -72,7 +72,7 @@ class SecurityLogger @Inject constructor(
         /**
          * Déverrouillage de compte
          */
-        data class AccountUnlocked : SecurityEvent()
+        data class AccountUnlocked(val timestamp: Long = System.currentTimeMillis()) : SecurityEvent()
     }
 
     /**

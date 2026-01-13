@@ -74,6 +74,6 @@ interface CardDao {
     @Query("SELECT * FROM bank_cards WHERE userId = :userId AND lastSyncedAt < :timestamp")
     suspend fun getStaleCards(userId: String, timestamp: Long): List<BankCardEntity>
 
-    @Query("UPDATE bank_cards SET lastSyncedAt = :timestamp WHERE lastSyncedAt > 0")
+    @Query("UPDATE bank_cards SET lastSyncedAt = :timestamp WHERE userId = :userId AND lastSyncedAt > 0")
     suspend fun invalidateCache(userId: String, timestamp: Long)
 }

@@ -83,7 +83,7 @@ interface ContactDao {
     @Query("SELECT * FROM contacts WHERE userId = :userId AND lastSyncedAt < :timestamp")
     suspend fun getStaleContacts(userId: String, timestamp: Long): List<ContactEntity>
 
-    @Query("UPDATE contacts SET lastSyncedAt = :timestamp WHERE lastSyncedAt > 0")
+    @Query("UPDATE contacts SET lastSyncedAt = :timestamp WHERE userId = :userId AND lastSyncedAt > 0")
     suspend fun invalidateCache(userId: String, timestamp: Long)
 
     // ✅ PHASE 2: Update lastUsed timestamp after transaction

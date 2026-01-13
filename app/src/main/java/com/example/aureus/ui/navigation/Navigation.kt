@@ -15,6 +15,12 @@ import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
+import dagger.hilt.android.EntryPointAccessors
+import com.example.aureus.di.PinSecurityManagerEntryPoint
+import com.example.aureus.di.PinAttemptTrackerEntryPoint
+import com.example.aureus.di.FirebaseDataManagerEntryPoint
+import com.example.aureus.security.BiometricManager
+import com.example.aureus.security.BiometricAvailability
 import android.util.Log
 import com.example.aureus.ui.auth.screen.*
 import com.example.aureus.ui.auth.viewmodel.AuthViewModel
@@ -38,8 +44,6 @@ import com.example.aureus.ui.cards.AddCardScreen
 import com.example.aureus.ui.contact.screen.ContactManagementScreen
 import com.example.aureus.ui.contact.screen.ContactAddEditScreen
 import com.example.aureus.ui.transactions.TransactionDetailScreenFirebase
-import com.example.aureus.security.BiometricManager
-import com.example.aureus.security.BiometricAvailability
 import com.example.aureus.ui.theme.ThemeManager
 import com.example.aureus.ui.notifications.NotificationScreen
 
@@ -53,6 +57,8 @@ sealed class Screen(val route: String, val deepLinkUriPattern: String? = null) {
     object Register : Screen("register")
     object PhoneNumberInput : Screen("phone_input/{phoneNumber}")
     object SmsVerification : Screen("sms_verification/{phoneNumber}")
+    object PinCheckpoint : Screen("pin_checkpoint")  // Vérifie si PIN configuré
+    object UnlockWithPin : Screen("unlock_with_pin")  // ✅ Nouveau: Entrer PIN pour accéder au Dashboard
     object PinSetup : Screen("pin_setup")
     object BiometricLock : Screen("biometric_lock")
     // Phase 4: Deep Links pour navigation depuis notifications
@@ -109,7 +115,7 @@ fun AppNavigation(
                         !onboardingViewModel.isOnboardingCompleted() -> Screen.Onboarding.route
                         !authViewModel.isLoggedIn -> Screen.Login.route
                         biometricManager.isBiometricAvailable() == BiometricAvailability.Available -> Screen.BiometricLock.route
-                        else -> Screen.Dashboard.route
+                        else -> Screen.PinCheckpoint.route  // ✅ Vérifier PIN avant Dashboard
                     }
                     navController.navigate(nextRoute) {
                         popUpTo(Screen.Splash.route) { inclusive = true }
@@ -128,8 +134,8 @@ fun AppNavigation(
                     }
                 },
                 onUsePin = {
-                    // Navigate to PIN screen or dashboard with PIN unlock
-                    navController.navigate(Screen.PinSetup.route) {
+                    // Navigate to PIN unlock screen
+                    navController.navigate(Screen.UnlockWithPin.route) {
                         popUpTo(Screen.BiometricLock.route) { inclusive = true }
                     }
                 },
@@ -158,9 +164,8 @@ fun AppNavigation(
             LoginScreen(
                 viewModel = authViewModel,
                 onLoginSuccess = {
-                    // Login email/password -> utilisateur déjà a compte + téléphone + PIN
-                    // MODE DÉMO: Pas d'étapes supplémentaires, direct au Dashboard
-                    navController.navigate(Screen.Dashboard.route) {
+                    // Login email/password -> vérifier si PIN configuré
+                    navController.navigate(Screen.PinCheckpoint.route) {
                         popUpTo(Screen.Login.route) { inclusive = true }
                     }
                 },
@@ -170,8 +175,73 @@ fun AppNavigation(
                 onGoogleSignInSuccess = {
                     // Google Sign-In -> compte créé, maintenant lier téléphone
                     phoneAuthViewModel.setLinkingExistingUser(true)
+
+                    // Pour l'instant, toujours demander le numéro de téléphone pour Google Auth
+                    // (peut être optimisé plus tard pour vérifier si le numéro existe déjà)
                     navController.navigate(ScreenUtils.phoneNumberInputScreen()) {
                         popUpTo(Screen.Login.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        // PIN Checkpoint Screen - Vérifie si PIN configuré
+        composable(Screen.PinCheckpoint.route) {
+            val context = LocalContext.current
+            val pinFirestoreManager = remember {
+                EntryPointAccessors.fromApplication(
+                    context.applicationContext,
+                    FirebaseDataManagerEntryPoint::class.java
+                ).pinFirestoreManager()
+            }
+
+            PinCheckpointScreen(
+                pinFirestoreManager = pinFirestoreManager,
+                onPinSetupRequired = {
+                    // Pas de PIN - aller à PinSetup
+                    navController.navigate(Screen.PinSetup.route) {
+                        popUpTo(Screen.PinCheckpoint.route) { inclusive = true }
+                    }
+                },
+                onPinAlreadyConfigured = {
+                    // PIN déjà configuré - aller à UnlockWithPin
+                    navController.navigate(Screen.UnlockWithPin.route) {
+                        popUpTo(Screen.PinCheckpoint.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        // Unlock With PIN Screen - Entrer PIN pour accéder au Dashboard
+        composable(Screen.UnlockWithPin.route) {
+            val context = LocalContext.current
+            val pinSecurityManager = remember {
+                EntryPointAccessors.fromApplication(
+                    context.applicationContext,
+                    PinSecurityManagerEntryPoint::class.java
+                ).pinSecurityManager()
+            }
+            val pinAttemptTracker = remember {
+                EntryPointAccessors.fromApplication(
+                    context.applicationContext,
+                    PinAttemptTrackerEntryPoint::class.java
+                ).pinAttemptTracker()
+            }
+
+            UnlockWithPinScreen(
+                pinSecurityManager = pinSecurityManager,
+                pinAttemptTracker = pinAttemptTracker,
+                onUnlockSuccess = {
+                    // PIN correct - naviguer vers Dashboard
+                    navController.navigate(Screen.Dashboard.route) {
+                        popUpTo(Screen.UnlockWithPin.route) { inclusive = true }
+                    }
+                },
+                onLogout = {
+                    // Logout - retour au Login
+                    authViewModel.logout()
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(0) { inclusive = true }
                     }
                 }
             )
@@ -316,8 +386,7 @@ fun AppNavigation(
                     navController.navigate(Screen.Login.route) {
                         popUpTo(0) { inclusive = true }
                     }
-                },
-                themeManager = themeManager
+                }
             )
         }
 
@@ -462,9 +531,20 @@ fun AppNavigation(
             route = Screen.PinVerification.route,
             arguments = listOf(navArgument("action") { type = NavType.StringType })
         ) { backStackEntry ->
+            val context = LocalContext.current
             val action = backStackEntry.arguments?.getString("action") ?: ""
-            val pinSecurityManager: com.example.aureus.security.PinSecurityManager = hiltViewModel()
-            val pinAttemptTracker: com.example.aureus.security.PinAttemptTracker = hiltViewModel()
+            val pinSecurityManager = remember {
+                EntryPointAccessors.fromApplication(
+                    context.applicationContext,
+                    PinSecurityManagerEntryPoint::class.java
+                ).pinSecurityManager()
+            }
+            val pinAttemptTracker = remember {
+                EntryPointAccessors.fromApplication(
+                    context.applicationContext,
+                    PinAttemptTrackerEntryPoint::class.java
+                ).pinAttemptTracker()
+            }
             val transferViewModel: TransferViewModel = hiltViewModel()
 
             // ✅ PHASE 7: PIN validé → Exécuter l'action!
@@ -577,7 +657,13 @@ fun AppNavigation(
 
         // Pin Lockout Screen (Phase 4 - Security)
         composable(Screen.PinLockout.route) {
-            val pinAttemptTracker: com.example.aureus.security.PinAttemptTracker = hiltViewModel()
+            val context = LocalContext.current
+            val pinAttemptTracker = remember {
+                EntryPointAccessors.fromApplication(
+                    context.applicationContext,
+                    PinAttemptTrackerEntryPoint::class.java
+                ).pinAttemptTracker()
+            }
             val authViewModel: AuthViewModel = hiltViewModel()
 
             PinLockoutScreen(
@@ -614,8 +700,14 @@ fun AppNavigation(
                 navArgument("transactionId") { type = NavType.StringType; nullable = false }
             )
         ) { backStackEntry ->
+            val context = LocalContext.current
             val transactionId = backStackEntry.arguments?.getString("transactionId") ?: ""
-            val firebaseDataManager: com.example.aureus.data.remote.firebase.FirebaseDataManager = hiltViewModel()
+            val firebaseDataManager = remember {
+                EntryPointAccessors.fromApplication(
+                    context.applicationContext,
+                    FirebaseDataManagerEntryPoint::class.java
+                ).firebaseDataManager()
+            }
 
             TransactionDetailScreenFirebase(
                 transactionId = transactionId,

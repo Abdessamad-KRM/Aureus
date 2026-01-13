@@ -22,9 +22,12 @@ import com.example.aureus.ui.theme.*
 import com.example.aureus.ui.theme.ThemeManager
 import androidx.compose.material.icons.automirrored.filled.*
 import androidx.hilt.navigation.compose.hiltViewModel
+import dagger.hilt.android.EntryPointAccessors
+import com.example.aureus.di.ThemeManagerEntryPoint
 import kotlinx.coroutines.launch
 
 import androidx.navigation.NavController
+import androidx.compose.ui.platform.LocalContext
 
 /**
  * Main Screen with Bottom Navigation - Version démo statique
@@ -40,9 +43,15 @@ fun MainScreen(
     onNavigateToProfile: () -> Unit = {},
     onNavigateToContacts: () -> Unit = {},
     onNavigateToNotifications: () -> Unit = {},
-    onLogout: () -> Unit = {},
-    themeManager: ThemeManager = hiltViewModel()
+    onLogout: () -> Unit = {}
 ) {
+    val context = LocalContext.current
+    val themeManager = remember {
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            ThemeManagerEntryPoint::class.java
+        ).themeManager()
+    }
     var selectedTab by remember { mutableStateOf(0) }
 
     Scaffold(
@@ -80,8 +89,7 @@ fun MainScreen(
                     onNavigateBack = { selectedTab = 0 },
                     onLogout = onLogout,
                     onContacts = onNavigateToContacts,
-                    onCategories = {},
-                    themeManager = themeManager
+                    onCategories = {}
                 )
             }
         }

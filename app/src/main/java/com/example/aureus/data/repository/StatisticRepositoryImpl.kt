@@ -93,66 +93,29 @@ class StatisticRepositoryImpl @Inject constructor(
 
     override suspend fun getSpendingTrends(userId: String, period: StatisticPeriod): Flow<SpendingTrend> {
         return flow {
-            val (currentStart, currentEnd) = getPeriodRange(period, 0)
-            val (previousStart, previousEnd) = getPeriodRange(period, 1)
+            try {
+                val (currentStart, currentEnd) = getPeriodRange(period, 0)
+                val (previousStart, previousEnd) = getPeriodRange(period, 1)
 
-            val incomeFlow = transactionRepository.getTotalIncome(userId, currentStart, currentEnd)
-            val expenseFlow = transactionRepository.getTotalExpense(userId, currentStart, currentEnd)
-            val prevIncomeFlow = transactionRepository.getTotalIncome(userId, previousStart, previousEnd)
-            val prevExpenseFlow = transactionRepository.getTotalExpense(userId, previousStart, previousEnd)
-
-            var currentExpense = 0.0
-            var previousExpense = 0.0
-
-            expenseFlow.collect { currentExpense = it }
-            prevExpenseFlow.collect { previousExpense = it }
-
-            val changeAmount = currentExpense - previousExpense
-            val changePercentage = if (previousExpense > 0) {
-                ((changeAmount / previousExpense) * 100)
-            } else {
-                if (currentExpense > 0) 100.0 else 0.0
-            }
-
-            val trend = when {
-                changePercentage > 5 -> TrendDirection.UP
-                changePercentage < -5 -> TrendDirection.DOWN
-                else -> TrendDirection.STABLE
-            }
-
-            emit(
-                SpendingTrend(
-                    period = period,
-                    currentValue = currentExpense,
-                    previousValue = previousExpense,
-                    changePercentage = changePercentage,
-                    changeAmount = changeAmount,
-                    trend = trend
-                )
-            )
-        }.flowOn(Dispatchers.IO)
-    }
-
-    override suspend fun getSpendingTrendHistory(
-        userId: String,
-        period: StatisticPeriod,
-        periodsCount: Int
-    ): Flow<List<SpendingTrend>> {
-        return flow {
-            val trends = mutableListOf<SpendingTrend>()
-
-            for (i in 0 until periodsCount) {
-                val (currentStart, currentEnd) = getPeriodRange(period, i)
-                val (previousStart, previousEnd) = getPeriodRange(period, i + 1)
-
-                val currentExpenseFlow = transactionRepository.getTotalExpense(userId, currentStart, currentEnd)
-                val previousExpenseFlow = transactionRepository.getTotalExpense(userId, previousStart, previousEnd)
+                val incomeFlow = transactionRepository.getTotalIncome(userId, currentStart, currentEnd)
+                val expenseFlow = transactionRepository.getTotalExpense(userId, currentStart, currentEnd)
+                val prevIncomeFlow = transactionRepository.getTotalIncome(userId, previousStart, previousEnd)
+                val prevExpenseFlow = transactionRepository.getTotalExpense(userId, previousStart, previousEnd)
 
                 var currentExpense = 0.0
                 var previousExpense = 0.0
 
-                currentExpenseFlow.collect { currentExpense = it }
-                previousExpenseFlow.collect { previousExpense = it }
+                try {
+                    expenseFlow.collect { currentExpense = it }
+                } catch (e: Exception) {
+                    Log.w("StatisticRepository", "Failed to collect current expense flow: ${e.message}")
+                }
+
+                try {
+                    prevExpenseFlow.collect { previousExpense = it }
+                } catch (e: Exception) {
+                    Log.w("StatisticRepository", "Failed to collect previous expense flow: ${e.message}")
+                }
 
                 val changeAmount = currentExpense - previousExpense
                 val changePercentage = if (previousExpense > 0) {
@@ -167,7 +130,7 @@ class StatisticRepositoryImpl @Inject constructor(
                     else -> TrendDirection.STABLE
                 }
 
-                trends.add(
+                emit(
                     SpendingTrend(
                         period = period,
                         currentValue = currentExpense,
@@ -177,9 +140,84 @@ class StatisticRepositoryImpl @Inject constructor(
                         trend = trend
                     )
                 )
+            } catch (e: Exception) {
+                Log.e("StatisticRepository", "Error in getSpendingTrends: ${e.message}", e)
+                // Emit a default trend instead of crashing
+                emit(
+                    SpendingTrend(
+                        period = period,
+                        currentValue = 0.0,
+                        previousValue = 0.0,
+                        changePercentage = 0.0,
+                        changeAmount = 0.0,
+                        trend = TrendDirection.STABLE
+                    )
+                )
             }
+        }.flowOn(Dispatchers.IO)
+    }
 
-            emit(trends.reversed())
+    override suspend fun getSpendingTrendHistory(
+        userId: String,
+        period: StatisticPeriod,
+        periodsCount: Int
+    ): Flow<List<SpendingTrend>> {
+        return flow {
+            try {
+                val trends = mutableListOf<SpendingTrend>()
+
+                for (i in 0 until periodsCount) {
+                    val (currentStart, currentEnd) = getPeriodRange(period, i)
+                    val (previousStart, previousEnd) = getPeriodRange(period, i + 1)
+
+                    val currentExpenseFlow = transactionRepository.getTotalExpense(userId, currentStart, currentEnd)
+                    val previousExpenseFlow = transactionRepository.getTotalExpense(userId, previousStart, previousEnd)
+
+                    var currentExpense = 0.0
+                    var previousExpense = 0.0
+
+                    try {
+                        currentExpenseFlow.collect { currentExpense = it }
+                    } catch (e: Exception) {
+                        Log.w("StatisticRepository", "Failed to collect current expense in trend history: ${e.message}")
+                    }
+
+                    try {
+                        previousExpenseFlow.collect { previousExpense = it }
+                    } catch (e: Exception) {
+                        Log.w("StatisticRepository", "Failed to collect previous expense in trend history: ${e.message}")
+                    }
+
+                    val changeAmount = currentExpense - previousExpense
+                    val changePercentage = if (previousExpense > 0) {
+                        ((changeAmount / previousExpense) * 100)
+                    } else {
+                        if (currentExpense > 0) 100.0 else 0.0
+                    }
+
+                    val trend = when {
+                        changePercentage > 5 -> TrendDirection.UP
+                        changePercentage < -5 -> TrendDirection.DOWN
+                        else -> TrendDirection.STABLE
+                    }
+
+                    trends.add(
+                        SpendingTrend(
+                            period = period,
+                            currentValue = currentExpense,
+                            previousValue = previousExpense,
+                            changePercentage = changePercentage,
+                            changeAmount = changeAmount,
+                            trend = trend
+                        )
+                    )
+                }
+
+                emit(trends.reversed())
+            } catch (e: Exception) {
+                Log.e("StatisticRepository", "Error in getSpendingTrendHistory: ${e.message}", e)
+                emit(emptyList())
+            }
         }.flowOn(Dispatchers.IO)
     }
 
@@ -190,34 +228,73 @@ class StatisticRepositoryImpl @Inject constructor(
         endDate: Date
     ): Flow<PeriodStatistic> {
         return flow {
-            val incomeFlow = transactionRepository.getTotalIncome(userId, startDate, endDate)
-            val expenseFlow = transactionRepository.getTotalExpense(userId, startDate, endDate)
-            
-            var totalIncome = 0.0
-            var totalExpense = 0.0
-            
-            incomeFlow.collect { totalIncome = it }
-            expenseFlow.collect { totalExpense = it }
-            
-            val categoryBreakdown = getCategoryBreakdown(userId, startDate, endDate).first()
-            val transactions = transactionRepository.getTransactionsByDateRange(userId, startDate, endDate, 1000).first()
-            
-            val insights = generateInsights(totalIncome, totalExpense, categoryBreakdown, period)
+            try {
+                val incomeFlow = transactionRepository.getTotalIncome(userId, startDate, endDate)
+                val expenseFlow = transactionRepository.getTotalExpense(userId, startDate, endDate)
 
-            val stat = PeriodStatistic(
-                period = period,
-                startDate = dateFormat.format(startDate),
-                endDate = dateFormat.format(endDate),
-                totalIncome = totalIncome,
-                totalExpense = totalExpense,
-                netBalance = totalIncome - totalExpense,
-                transactionCount = transactions.size,
-                categoryBreakdown = categoryBreakdown,
-                spendingTrend = null, // À calculer si nécessaire
-                insights = insights
-            )
+                var totalIncome = 0.0
+                var totalExpense = 0.0
 
-            emit(stat)
+                try {
+                    incomeFlow.collect { totalIncome = it }
+                } catch (e: Exception) {
+                    Log.w("StatisticRepository", "Failed to collect income flow: ${e.message}")
+                }
+
+                try {
+                    expenseFlow.collect { totalExpense = it }
+                } catch (e: Exception) {
+                    Log.w("StatisticRepository", "Failed to collect expense flow: ${e.message}")
+                }
+
+                val categoryBreakdown = try {
+                    getCategoryBreakdown(userId, startDate, endDate).first()
+                } catch (e: Exception) {
+                    Log.w("StatisticRepository", "Failed to get category breakdown: ${e.message}")
+                    emptyList()
+                }
+
+                val transactions = try {
+                    transactionRepository.getTransactionsByDateRange(userId, startDate, endDate, 1000).first()
+                } catch (e: Exception) {
+                    Log.w("StatisticRepository", "Failed to get transactions: ${e.message}")
+                    emptyList()
+                }
+
+                val insights = generateInsights(totalIncome, totalExpense, categoryBreakdown, period)
+
+                val stat = PeriodStatistic(
+                    period = period,
+                    startDate = dateFormat.format(startDate),
+                    endDate = dateFormat.format(endDate),
+                    totalIncome = totalIncome,
+                    totalExpense = totalExpense,
+                    netBalance = totalIncome - totalExpense,
+                    transactionCount = transactions.size,
+                    categoryBreakdown = categoryBreakdown,
+                    spendingTrend = null, // À calculer si nécessaire
+                    insights = insights
+                )
+
+                emit(stat)
+            } catch (e: Exception) {
+                Log.e("StatisticRepository", "Error in getPeriodStatistics: ${e.message}", e)
+                // Emit default statistics instead of crashing
+                emit(
+                    PeriodStatistic(
+                        period = period,
+                        startDate = dateFormat.format(startDate),
+                        endDate = dateFormat.format(endDate),
+                        totalIncome = 0.0,
+                        totalExpense = 0.0,
+                        netBalance = 0.0,
+                        transactionCount = 0,
+                        categoryBreakdown = emptyList(),
+                        spendingTrend = null,
+                        insights = emptyList()
+                    )
+                )
+            }
         }.flowOn(Dispatchers.IO)
     }
 
@@ -229,37 +306,65 @@ class StatisticRepositoryImpl @Inject constructor(
         previousEndDate: Date
     ): Flow<PeriodComparison> {
         return flow {
-            val currentStatsFlow = getPeriodStatistics(userId, StatisticPeriod.MONTHLY, currentStartDate, currentEndDate)
-            val previousStatsFlow = getPeriodStatistics(userId, StatisticPeriod.MONTHLY, previousStartDate, previousEndDate)
+            try {
+                val currentStatsFlow = getPeriodStatistics(userId, StatisticPeriod.MONTHLY, currentStartDate, currentEndDate)
+                val previousStatsFlow = getPeriodStatistics(userId, StatisticPeriod.MONTHLY, previousStartDate, previousEndDate)
 
-            var currentStats: PeriodStatistic? = null
-            var previousStats: PeriodStatistic? = null
+                var currentStats: PeriodStatistic? = null
+                var previousStats: PeriodStatistic? = null
 
-            currentStatsFlow.collect { currentStats = it }
-            previousStatsFlow.collect { previousStats = it }
+                try {
+                    currentStatsFlow.collect { currentStats = it }
+                } catch (e: Exception) {
+                    Log.w("StatisticRepository", "Failed to collect current stats flow: ${e.message}")
+                }
 
-            if (currentStats != null && previousStats != null) {
-                val incomeChange = currentStats.totalIncome - previousStats.totalIncome
-                val expenseChange = currentStats.totalExpense - previousStats.totalExpense
-                val balanceChange = currentStats.netBalance - previousStats.netBalance
+                try {
+                    previousStatsFlow.collect { previousStats = it }
+                } catch (e: Exception) {
+                    Log.w("StatisticRepository", "Failed to collect previous stats flow: ${e.message}")
+                }
 
-                val incomeChangePercentage = if (previousStats.totalIncome > 0) {
-                    ((incomeChange / previousStats.totalIncome) * 100)
-                } else 0.0
+                if (currentStats != null && previousStats != null) {
+                    val current = currentStats!!
+                    val previous = previousStats!!
 
-                val expenseChangePercentage = if (previousStats.totalExpense > 0) {
-                    ((expenseChange / previousStats.totalExpense) * 100)
-                } else 0.0
+                    val incomeChange = current.totalIncome - previous.totalIncome
+                    val expenseChange = current.totalExpense - previous.totalExpense
+                    val balanceChange = current.netBalance - previous.netBalance
 
+                    val incomeChangePercentage = if (previous.totalIncome > 0) {
+                        ((incomeChange / previous.totalIncome) * 100)
+                    } else 0.0
+
+                    val expenseChangePercentage = if (previous.totalExpense > 0) {
+                        ((expenseChange / previous.totalExpense) * 100)
+                    } else 0.0
+
+                    emit(
+                        PeriodComparison(
+                            currentPeriod = current,
+                            previousPeriod = previous,
+                            incomeChange = incomeChange,
+                            expenseChange = expenseChange,
+                            balanceChange = balanceChange,
+                            incomeChangePercentage = incomeChangePercentage,
+                            expenseChangePercentage = expenseChangePercentage
+                        )
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e("StatisticRepository", "Error in comparePeriods: ${e.message}", e)
+                // Emit default comparison instead of crashing
                 emit(
                     PeriodComparison(
-                        currentPeriod = currentStats,
-                        previousPeriod = previousStats,
-                        incomeChange = incomeChange,
-                        expenseChange = expenseChange,
-                        balanceChange = balanceChange,
-                        incomeChangePercentage = incomeChangePercentage,
-                        expenseChangePercentage = expenseChangePercentage
+                        currentPeriod = PeriodStatistic(StatisticPeriod.MONTHLY, "", "", 0.0, 0.0, 0.0, 0, emptyList(), null, emptyList()),
+                        previousPeriod = PeriodStatistic(StatisticPeriod.MONTHLY, "", "", 0.0, 0.0, 0.0, 0, emptyList(), null, emptyList()),
+                        incomeChange = 0.0,
+                        expenseChange = 0.0,
+                        balanceChange = 0.0,
+                        incomeChangePercentage = 0.0,
+                        expenseChangePercentage = 0.0
                     )
                 )
             }
@@ -314,22 +419,41 @@ class StatisticRepositoryImpl @Inject constructor(
 
     override suspend fun getSpendingInsights(userId: String, period: StatisticPeriod): Flow<List<SpendingInsight>> {
         return flow {
-            val (startDate, endDate) = getPeriodRange(period, 0)
+            try {
+                val (startDate, endDate) = getPeriodRange(period, 0)
 
-            val incomeFlow = transactionRepository.getTotalIncome(userId, startDate, endDate)
-            val expenseFlow = transactionRepository.getTotalExpense(userId, startDate, endDate)
-            val categoriesFlow = getCategoryBreakdown(userId, startDate, endDate)
+                val incomeFlow = transactionRepository.getTotalIncome(userId, startDate, endDate)
+                val expenseFlow = transactionRepository.getTotalExpense(userId, startDate, endDate)
+                val categoriesFlow = getCategoryBreakdown(userId, startDate, endDate)
 
-            var totalIncome = 0.0
-            var totalExpense = 0.0
-            val categories = mutableListOf<CategoryStatistic>()
+                var totalIncome = 0.0
+                var totalExpense = 0.0
+                val categories = mutableListOf<CategoryStatistic>()
 
-            incomeFlow.collect { totalIncome = it }
-            expenseFlow.collect { totalExpense = it }
-            categoriesFlow.collect { categories.clear(); categories.addAll(it) }
+                try {
+                    incomeFlow.collect { totalIncome = it }
+                } catch (e: Exception) {
+                    Log.w("StatisticRepository", "Failed to collect income in insights: ${e.message}")
+                }
 
-            val insights = generateInsights(totalIncome, totalExpense, categories, period)
-            emit(insights)
+                try {
+                    expenseFlow.collect { totalExpense = it }
+                } catch (e: Exception) {
+                    Log.w("StatisticRepository", "Failed to collect expense in insights: ${e.message}")
+                }
+
+                try {
+                    categoriesFlow.collect { categories.clear(); categories.addAll(it) }
+                } catch (e: Exception) {
+                    Log.w("StatisticRepository", "Failed to collect categories in insights: ${e.message}")
+                }
+
+                val insights = generateInsights(totalIncome, totalExpense, categories, period)
+                emit(insights)
+            } catch (e: Exception) {
+                Log.e("StatisticRepository", "Error in getSpendingInsights: ${e.message}", e)
+                emit(emptyList())
+            }
         }.flowOn(Dispatchers.IO)
     }
 
@@ -339,21 +463,30 @@ class StatisticRepositoryImpl @Inject constructor(
         predictionPeriods: Int
     ): Flow<Double> {
         return flow {
-            // Prédiction basée sur la moyenne des 3 dernières périodes
-            val expenseHistoryFlow = getSpendingTrendHistory(userId, period, 4)
-            val expenseHistory = mutableListOf<Double>()
+            try {
+                // Prédiction basée sur la moyenne des 3 dernières périodes
+                val expenseHistoryFlow = getSpendingTrendHistory(userId, period, 4)
+                val expenseHistory = mutableListOf<Double>()
 
-            expenseHistoryFlow.collect { trends ->
-                trends.take(3).forEach { expenseHistory.add(it.currentValue) }
+                try {
+                    expenseHistoryFlow.collect { trends ->
+                        trends.take(3).forEach { expenseHistory.add(it.currentValue) }
+                    }
+                } catch (e: Exception) {
+                    Log.w("StatisticRepository", "Failed to collect expense history for prediction: ${e.message}")
+                }
+
+                val predictedSpending = if (expenseHistory.isNotEmpty()) {
+                    expenseHistory.average()
+                } else {
+                    0.0
+                }
+
+                emit(predictedSpending * predictionPeriods)
+            } catch (e: Exception) {
+                Log.e("StatisticRepository", "Error in predictFutureSpending: ${e.message}", e)
+                emit(0.0)
             }
-
-            val predictedSpending = if (expenseHistory.isNotEmpty()) {
-                expenseHistory.average()
-            } else {
-                0.0
-            }
-
-            emit(predictedSpending * predictionPeriods)
         }.flowOn(Dispatchers.IO)
     }
 
@@ -422,24 +555,38 @@ class StatisticRepositoryImpl @Inject constructor(
 
     override suspend fun getSpendingPercentage(userId: String, startDate: Date, endDate: Date): Flow<Int> {
         return flow {
-            val incomeFlow = transactionRepository.getTotalIncome(userId, startDate, endDate)
-            val expenseFlow = transactionRepository.getTotalExpense(userId, startDate, endDate)
+            try {
+                val incomeFlow = transactionRepository.getTotalIncome(userId, startDate, endDate)
+                val expenseFlow = transactionRepository.getTotalExpense(userId, startDate, endDate)
 
-            var income = 0.0
-            var expense = 0.0
+                var income = 0.0
+                var expense = 0.0
 
-            incomeFlow.collect { income = it }
-            expenseFlow.collect { expense = it }
+                try {
+                    incomeFlow.collect { income = it }
+                } catch (e: Exception) {
+                    Log.w("StatisticRepository", "Failed to collect income for percentage: ${e.message}")
+                }
 
-            val percentage = if (income > 0) {
-                ((expense / income) * 100).toInt()
-            } else if (expense > 0) {
-                100
-            } else {
-                0
+                try {
+                    expenseFlow.collect { expense = it }
+                } catch (e: Exception) {
+                    Log.w("StatisticRepository", "Failed to collect expense for percentage: ${e.message}")
+                }
+
+                val percentage = if (income > 0) {
+                    ((expense / income) * 100).toInt()
+                } else if (expense > 0) {
+                    100
+                } else {
+                    0
+                }
+
+                emit(percentage)
+            } catch (e: Exception) {
+                Log.e("StatisticRepository", "Error in getSpendingPercentage: ${e.message}", e)
+                emit(0)
             }
-
-            emit(percentage)
         }.flowOn(Dispatchers.IO)
     }
 
@@ -680,7 +827,9 @@ class StatisticRepositoryImpl @Inject constructor(
             withContext(Dispatchers.IO) {
                 val cacheKey = StatisticsCacheEntity.generateCacheKey(userId, statType, period)
                 val cacheEntry = cacheDao.getValidCache(cacheKey)
-                cacheEntry?.parseData()
+                cacheEntry?.let {
+                    com.google.gson.Gson().fromJson(it.jsonData, clazz)
+                }
             }
         } catch (e: Exception) {
             Log.e("StatisticRepositoryImpl", "Failed to get cached statistic: ${e.message}", e)
@@ -697,12 +846,15 @@ class StatisticRepositoryImpl @Inject constructor(
     ): Boolean {
         return try {
             withContext(Dispatchers.IO) {
-                val cacheEntry = StatisticsCacheEntity.fromData(
+                val gson = com.google.gson.Gson()
+                val jsonData = gson.toJson(data)
+                val cacheEntry = StatisticsCacheEntity(
+                    cacheKey = StatisticsCacheEntity.generateCacheKey(userId, statType, period),
                     userId = userId,
                     statType = statType,
-                    data = data,
                     period = period,
-                    ttlMs = ttlMs
+                    jsonData = jsonData,
+                    expiresAt = System.currentTimeMillis() + ttlMs
                 )
                 cacheDao.upsertWithCleanup(cacheEntry)
                 true
@@ -751,9 +903,14 @@ class StatisticRepositoryImpl @Inject constructor(
     ): Flow<T?> {
         return try {
             val cacheKey = StatisticsCacheEntity.generateCacheKey(userId, statType, period)
+            val gson = com.google.gson.Gson()
             cacheDao.getCacheByKeyFlow(cacheKey).map { cacheEntry ->
                 if (cacheEntry != null && !cacheEntry.isExpired()) {
-                    cacheEntry.parseData()
+                    try {
+                        gson.fromJson(cacheEntry.jsonData, clazz)
+                    } catch (e: Exception) {
+                        null
+                    }
                 } else {
                     null
                 }

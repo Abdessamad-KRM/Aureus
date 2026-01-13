@@ -59,8 +59,7 @@ class OfflineSyncManager @Inject constructor(
             .setRequiresBatteryNotLow(false)
             .build()
 
-        val periodicWorkRequest = PeriodicWorkRequestBuilder(
-            FirebaseSyncWorker::class.java,
+        val periodicWorkRequest = PeriodicWorkRequestBuilder<FirebaseSyncWorker>(
             15, // repeat interval (minutes)
             TimeUnit.MINUTES
         )
@@ -329,14 +328,6 @@ class OfflineSyncManager @Inject constructor(
     private suspend fun getPendingChangesCount(): Int {
         return database.transactionDao().getUnsyncedTransactions().size
     }
-}
-
-/**
- * Résultat de synchronisation
- */
-sealed class SyncResult {
-    object Success : SyncResult()
-    data class Error(val message: String) : SyncResult()
 }
 
 /**

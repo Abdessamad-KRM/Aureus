@@ -71,6 +71,8 @@ fun PinSetupScreen(
     // Navigate sur succès de sauvegarde
     LaunchedEffect(pinState) {
         if (pinState is Resource.Success) {
+            isSaving = false
+            isSuccess = true
             delay(500)
             onPinSetupComplete()
         }
@@ -80,6 +82,7 @@ fun PinSetupScreen(
     LaunchedEffect(pinState) {
         if (pinState is Resource.Error) {
             isError = true
+            isSaving = false
             delay(1500)
             isError = false
         }

@@ -32,6 +32,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import dagger.hilt.android.EntryPointAccessors
+import com.example.aureus.di.SecureCredentialManagerEntryPoint
 import com.example.aureus.R
 import com.example.aureus.domain.model.Resource
 import com.example.aureus.security.CredentialPair
@@ -54,13 +56,20 @@ import kotlinx.coroutines.launch
 @Composable
 fun LoginScreen(
     viewModel: AuthViewModel = hiltViewModel(),
-    credentialManager: SecureCredentialManager = hiltViewModel(),
     onLoginSuccess: () -> Unit,
     onNavigateToRegister: () -> Unit,
     onGoogleSignInSuccess: () -> Unit = {},
     onGoogleSignInError: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
+
+    // Properly inject SecureCredentialManager singleton through Hilt EntryPoint
+    val credentialManager = remember {
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            SecureCredentialManagerEntryPoint::class.java
+        ).secureCredentialManager()
+    }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var emailError by remember { mutableStateOf<String?>(null) }
@@ -73,21 +82,6 @@ fun LoginScreen(
     var lastTapTime by remember { mutableLongStateOf(0) }
     var autoFillTriggered by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
-
-    // Auto-sauvegarde après login réussi
-    LaunchedEffect(loginState) {
-        if (loginState is Resource.Success && email.isNotBlank() && password.isNotBlank()) {
-            // Auto-sauvegarder le compte (comme suggestions Android)
-            delay(500) // Petit délai pour s'assurer que le login est complété
-            credentialManager.saveAccount(email, password)
-                .onSuccess {
-                    Log.d("LoginScreen", "Account auto-saved: $email")
-                }
-                .onFailure {
-                    Log.w("LoginScreen", "Failed to auto-save account", it)
-                }
-        }
-    }
 
     // Google Sign-In Launcher
     val googleSignInLauncher = rememberLauncherForActivityResult(
@@ -103,6 +97,28 @@ fun LoginScreen(
         } catch (e: ApiException) {
             Log.w("LoginScreen", "Google Sign-In Failed", e)
             onGoogleSignInError("Google Sign-In Failed: ${e.message}")
+        }
+    }
+
+    // Navigate on successful login (email/password)
+    LaunchedEffect(loginState) {
+        when (loginState) {
+            is Resource.Success -> {
+                // Auto-sauvegarde et navigation
+                if (email.isNotBlank() && password.isNotBlank()) {
+                    delay(500) // Petit délai pour s'assurer que le login est complété
+                    credentialManager.saveAccount(email, password)
+                        .onSuccess {
+                            Log.d("LoginScreen", "Account auto-saved: $email")
+                        }
+                        .onFailure {
+                            Log.w("LoginScreen", "Failed to auto-save account", it)
+                        }
+                }
+                // Login successful - navigate to dashboard
+                onLoginSuccess()
+            }
+            else -> {}
         }
     }
 
@@ -174,19 +190,20 @@ fun LoginScreen(
         }
     }
 
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .background(NeutralLightGray)
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onTap = { _ -> handleScreenTap() }
-                )
-            }
     ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
+                .weight(1f)
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onTap = { _ -> handleScreenTap() }
+                    )
+                }
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp)
                 .padding(top = 80.dp),
@@ -433,6 +450,18 @@ fun LoginScreen(
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 )
             }
+
+        // Bottom clickable spacer pour auto-fill
+        Spacer(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onTap = { _ -> handleScreenTap() }
+                    )
+                }
+        )
         }
     }
 }

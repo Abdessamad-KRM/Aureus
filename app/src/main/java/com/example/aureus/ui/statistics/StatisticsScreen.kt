@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -19,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -305,12 +307,13 @@ fun StatisticsScreen(
             }
         }
     }
+    }
 }
 
 // ==================== NEW ENHANCED COMPONENTS ====================
 
 @Composable
-private fun PeriodBadge(period: StatisticPeriod) {
+fun PeriodBadge(period: StatisticPeriod) {
     Card(
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
@@ -339,7 +342,7 @@ private fun PeriodBadge(period: StatisticPeriod) {
 }
 
 @Composable
-private fun InsightCard(insight: com.example.aureus.domain.model.SpendingInsight) {
+fun InsightCard(insight: com.example.aureus.domain.model.SpendingInsight) {
     val bgColor = when (insight.type) {
         com.example.aureus.domain.model.InsightType.SUCCESS -> SemanticGreen.copy(alpha = 0.1f)
         com.example.aureus.domain.model.InsightType.WARNING -> SemanticRed.copy(alpha = 0.1f)
@@ -402,7 +405,7 @@ private fun InsightCard(insight: com.example.aureus.domain.model.SpendingInsight
 // ==================== EXISTING DYNAMIC COMPONENTS ====================
 
 @Composable
-private fun DynamicBalanceCard(balance: Double) {
+fun DynamicBalanceCard(balance: Double) {
     // Phase 6: Animated balance counter
     val animatedBalance by animateFloatAsState(
         targetValue = balance.toFloat(),
@@ -479,7 +482,7 @@ private fun DynamicBalanceCard(balance: Double) {
 }
 
 @Composable
-private fun DynamicSpendingCircleCard(
+fun DynamicSpendingCircleCard(
     percentage: Int,
     income: Double,
     expense: Double,
@@ -581,9 +584,9 @@ private fun DynamicSpendingCircleCard(
                     progress = { animatedPercentage / 100f },
                     modifier = Modifier.fillMaxSize(),
                     strokeWidth = 12.dp,
+                    strokeCap = StrokeCap.Round,
                     color = SecondaryGold,
-                    trackColor = NeutralLightGray,
-                    animationSpec = ProgressIndicatorDefaults.ProgressAnimationSpec
+                    trackColor = NeutralLightGray
                 )
 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -633,7 +636,7 @@ private fun DynamicSpendingCircleCard(
 }
 
 @Composable
-private fun DynamicCategoryStatItem(
+fun DynamicCategoryStatItem(
     category: String,
     amount: Double,
     percentage: Int
@@ -650,9 +653,7 @@ private fun DynamicCategoryStatItem(
     }
 
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .animateItemPlacement(), // Smooth animations when list changes
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = NeutralWhite)
     ) {
@@ -671,7 +672,10 @@ private fun DynamicCategoryStatItem(
                     modifier = Modifier
                         .size(40.dp)
                         .clip(CircleShape)
-                        .background(categoryColor.copy(alpha = 0.1f)),
+                        .background(
+                            color = categoryColor.copy(alpha = 0.1f),
+                            shape = CircleShape
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -718,7 +722,7 @@ private fun DynamicCategoryStatItem(
 
 // ==================== HELPER FUNCTIONS ====================
 
-private fun getCategoryIconForCategory(category: String): androidx.compose.ui.graphics.vector.ImageVector {
+fun getCategoryIconForCategory(category: String): ImageVector {
     return when (category.uppercase()) {
         "SHOPPING" -> Icons.Default.ShoppingBag
         "FOOD & DRINK", "FOOD" -> Icons.Default.Restaurant
@@ -732,7 +736,7 @@ private fun getCategoryIconForCategory(category: String): androidx.compose.ui.gr
     }
 }
 
-private fun getDynamicCategoryColor(category: String): Color {
+fun getDynamicCategoryColor(category: String): Color {
     return when (category.uppercase()) {
         "SHOPPING" -> Color(0xFF9C27B0)
         "FOOD & DRINK", "FOOD" -> Color(0xFFFF9800)
@@ -747,7 +751,7 @@ private fun getDynamicCategoryColor(category: String): Color {
 }
 
 @Composable
-private fun SpendingLegend(
+fun SpendingLegend(
     color: Color,
     label: String,
     amount: Double
@@ -779,7 +783,7 @@ private fun SpendingLegend(
 /**
  * Point précalculé pour le chart ✅
  */
-private data class ChartPoint(
+data class ChartPoint(
     val x: Float,
     val y: Float,
     val controlX1: Float,
@@ -790,7 +794,7 @@ private data class ChartPoint(
 /**
  * Précalcule les points du chart en dehors du Canvas ✅
  */
-private fun preCalculateChartPoints(
+fun preCalculateChartPoints(
     data: List<Float>,
     width: Float,
     height: Float
@@ -819,7 +823,7 @@ private fun preCalculateChartPoints(
 }
 
 @Composable
-private fun CurvedLineChart(
+fun CurvedLineChart(
     data: List<Float>,
     modifier: Modifier = Modifier
 ) {
