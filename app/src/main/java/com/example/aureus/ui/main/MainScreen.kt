@@ -19,7 +19,12 @@ import com.example.aureus.ui.home.HomeScreen
 import com.example.aureus.ui.profile.SettingsScreen
 import com.example.aureus.ui.statistics.StatisticsScreen
 import com.example.aureus.ui.theme.*
+import com.example.aureus.ui.theme.ThemeManager
 import androidx.compose.material.icons.automirrored.filled.*
+import androidx.hilt.navigation.compose.hiltViewModel
+import kotlinx.coroutines.launch
+
+import androidx.navigation.NavController
 
 /**
  * Main Screen with Bottom Navigation - Version démo statique
@@ -27,12 +32,16 @@ import androidx.compose.material.icons.automirrored.filled.*
  */
 @Composable
 fun MainScreen(
+    navController: NavController,
     onNavigateToTransactions: () -> Unit = {},
     onNavigateToSendMoney: () -> Unit = {},
     onNavigateToRequestMoney: () -> Unit = {},
     onNavigateToAddCard: () -> Unit = {},
     onNavigateToProfile: () -> Unit = {},
-    onLogout: () -> Unit = {}
+    onNavigateToContacts: () -> Unit = {},
+    onNavigateToNotifications: () -> Unit = {},
+    onLogout: () -> Unit = {},
+    themeManager: ThemeManager = hiltViewModel()
 ) {
     var selectedTab by remember { mutableStateOf(0) }
 
@@ -56,18 +65,23 @@ fun MainScreen(
                     onNavigateToTransactions = onNavigateToTransactions,
                     onNavigateToSendMoney = onNavigateToSendMoney,
                     onNavigateToRequestMoney = onNavigateToRequestMoney,
-                    onNavigateToProfile = onNavigateToProfile
+                    onNavigateToProfile = onNavigateToProfile,
+                    onNavigateToNotifications = onNavigateToNotifications
                 )
                 1 -> StatisticsScreen(
                     onNavigateBack = { selectedTab = 0 }
                 )
                 2 -> MyCardsScreen(
+                    navController = navController,
                     onNavigateBack = { selectedTab = 0 },
                     onAddCard = onNavigateToAddCard
                 )
                 3 -> SettingsScreen(
                     onNavigateBack = { selectedTab = 0 },
-                    onLogout = onLogout
+                    onLogout = onLogout,
+                    onContacts = onNavigateToContacts,
+                    onCategories = {},
+                    themeManager = themeManager
                 )
             }
         }

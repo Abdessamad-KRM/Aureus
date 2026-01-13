@@ -16,11 +16,38 @@ interface TransactionDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTransaction(transaction: TransactionEntity)
 
+    // Upsert (insert or update) for sync operations
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(transaction: TransactionEntity)
+
+    // Get unsynced transactions
+    @Query("SELECT * FROM transactions WHERE is_synced = 0")
+    suspend fun getUnsyncedTransactions(): List<TransactionEntity>
+
+    // Mark as synced
+    @Query("UPDATE transactions SET is_synced = 1, is_pending_upload = 0 WHERE id = :transactionId")
+    suspend fun markAsSynced(transactionId: String)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTransactions(transactions: List<TransactionEntity>)
 
     @Query("SELECT * FROM transactions WHERE id = :transactionId")
     fun getTransactionById(transactionId: String): Flow<TransactionEntity?>
+
+    @Query("SELECT * FROM transactions WHERE id = :transactionId")
+    suspend fun getTransactionByIdSync(transactionId: String): TransactionEntity?
+
+    @Query("SELECT * FROM transactions WHERE userId = :userId ORDER BY date DESC")
+    fun getTransactionsById(userId: String): Flow<List<TransactionEntity>>
+
+    @Query("SELECT * FROM transactions WHERE userId = :userId AND is_pending_upload = 1")
+    suspend fun getPendingTransactions(userId: String): List<TransactionEntity>
+
+    @Query("UPDATE transactions SET lastSyncedAt = :timestamp WHERE lastSyncedAt > 0")
+    suspend fun invalidateCache(userId: String, timestamp: Long)
+
+    @Query("DELETE FROM transactions WHERE id = :transactionId")
+    suspend fun deleteTransaction(transactionId: String)
 
     @Query("SELECT * FROM transactions WHERE accountId = :accountId ORDER BY date DESC")
     fun getTransactionsByAccountId(accountId: String): Flow<List<TransactionEntity>>

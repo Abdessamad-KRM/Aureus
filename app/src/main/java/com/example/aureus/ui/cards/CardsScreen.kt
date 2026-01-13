@@ -22,59 +22,91 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.aureus.data.*
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.aureus.domain.model.CardColor
+import com.example.aureus.ui.cards.viewmodel.CardsViewModel
+import com.example.aureus.ui.components.SecureScreenFlag
 import com.example.aureus.ui.theme.*
 import java.text.NumberFormat
 import java.util.*
 
+// ==================== Helper Functions ====================
+// Helper functions must be defined before use
+
+private fun formatCurrency(amount: Double): String {
+    val format = NumberFormat.getCurrencyInstance(Locale("fr", "MA"))
+    format.currency = Currency.getInstance("MAD")
+    return format.format(amount).replace("MAD", "").trim() + " MAD"
+}
+
+private fun maskCardNumber(cardNumber: String): String {
+    return "**** " + cardNumber.takeLast(4)
+}
+
+private fun maskFullCard(cardNumber: String): String {
+    val parts = cardNumber.split(" ")
+    return "**** **** **** ${parts.last()}"
+}
+
+// ==================== Composables ====================
+
 /**
  * All Cards Screen - Display all user cards
+ * Uses FirebaseDataManager for real-time data
+ * ✅ PHASE 2: FLAG_SECURE enabled to prevent screenshots
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AllCardsScreen(
+    navController: androidx.navigation.NavController,
+    viewModel: CardsViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit = {},
     onAddCard: () -> Unit = {}
 ) {
-    val cards = remember { StaticCards.cards }
+    // ✅ PHASE 2: Prevent screenshots on sensitive card screens
+    SecureScreenFlag(enabled = true) {
+        val cards by viewModel.cards.collectAsState()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("All Cards", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onAddCard) {
-                        Icon(Icons.Default.Add, "Add Card")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = NeutralWhite
-                )
-            )
-        }
-    ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(NeutralLightGray)
-                .padding(padding),
-            contentPadding = PaddingValues(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            items(cards) { card ->
-                DetailedCardItem(
-                    card = card,
-                    onClick = { /* Navigate to card detail */ }
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("All Cards", fontWeight = FontWeight.Bold) },
+                    navigationIcon = {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = onAddCard) {
+                            Icon(Icons.Default.Add, "Add Card")
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = NeutralWhite
+                    )
                 )
             }
+        ) { padding ->
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(NeutralLightGray)
+                    .padding(padding),
+                contentPadding = PaddingValues(20.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                items(cards) { card ->
+                    DetailedCardItem(
+                        card = card,
+                        onClick = { cardId ->
+                            navController.navigate("card_detail/$cardId")
+                        }
+                    )
+                }
 
-            item {
-                AddCardButton(onClick = onAddCard)
+                item {
+                    AddCardButton(onClick = onAddCard)
+                }
             }
         }
     }
@@ -82,146 +114,223 @@ fun AllCardsScreen(
 
 /**
  * My Cards Screen - Compact view with card management
+ * Migrated to use viewModel.cards (Firebase) - Phase 3
+ * ✅ PHASE 2: FLAG_SECURE enabled to prevent screenshots
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MyCardsScreen(
+    navController: androidx.navigation.NavController,
+    viewModel: CardsViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit = {},
     onAddCard: () -> Unit = {}
 ) {
-    val cards = remember { StaticCards.cards }
-    var selectedCard by remember { mutableStateOf(cards.first()) }
+    // ✅ PHASE 2: Prevent screenshots on sensitive card screens
+    SecureScreenFlag(enabled = true) {
+        val cards by viewModel.cards.collectAsState()
+        val isLoading by viewModel.isLoading.collectAsState()
+        var selectedCard by remember { mutableStateOf<com.example.aureus.domain.model.BankCard?>(null) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("My Cards", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = NeutralWhite
-                )
-            )
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(NeutralLightGray)
-                .padding(padding)
-        ) {
-            // Card Carousel
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp)
-            ) {
-                FullCardDisplay(
-                    card = selectedCard,
-                    onCardClick = { /* Show card details */ }
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Card selector
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    cards.forEach { card ->
-                        CardSelectorDot(
-                            isSelected = card.id == selectedCard.id,
-                            onClick = { selectedCard = card }
-                        )
-                    }
-                }
+        // Auto-select default card or first card
+        LaunchedEffect(cards) {
+            if (selectedCard == null && cards.isNotEmpty()) {
+                selectedCard = cards.find { it.isDefault } ?: cards.first()
             }
+        }
 
-            // Card Info Section
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(20.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                item {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("My Cards", fontWeight = FontWeight.Bold) },
+                    navigationIcon = {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = NeutralWhite
+                    )
+                )
+            }
+        ) { padding ->
+            if (isLoading && cards.isEmpty()) {
+                // Loading state
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        color = SecondaryGold
+                    )
+                }
+            } else if (cards.isEmpty()) {
+                // Empty state
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                        .background(NeutralLightGray),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        Icons.Default.CreditCard,
+                        contentDescription = null,
+                        tint = NeutralMediumGray,
+                        modifier = Modifier.size(80.dp)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "Card Details",
-                        fontSize = 18.sp,
+                        text = "No Cards Yet",
+                        fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = PrimaryNavyBlue
                     )
-                }
-
-                item {
-                    CardInfoRow("Card Number", maskFullCard(selectedCard.cardNumber))
-                }
-                item {
-                    CardInfoRow("Card Holder", selectedCard.cardHolder)
-                }
-                item {
-                    CardInfoRow("Expiry Date", selectedCard.expiryDate)
-                }
-                item {
-                    CardInfoRow("Card Type", selectedCard.cardType.name)
-                }
-                item {
-                    CardInfoRow("Balance", formatCurrency(selectedCard.balance))
-                }
-
-                item {
                     Spacer(modifier = Modifier.height(8.dp))
-                }
-
-                item {
+                    Text(
+                        text = "Add your first card to get started",
+                        fontSize = 14.sp,
+                        color = NeutralMediumGray
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
                     Button(
-                        onClick = { /* Set as default */ },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (selectedCard.isDefault) SemanticGreen else PrimaryNavyBlue
-                        ),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Icon(
-                            imageVector = if (selectedCard.isDefault) Icons.Default.Check else Icons.Default.Star,
-                            contentDescription = null
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(if (selectedCard.isDefault) "Default Card" else "Set as Default")
-                    }
-                }
-
-                item {
-                    OutlinedButton(
                         onClick = onAddCard,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = SecondaryGold
-                        )
+                        colors = ButtonDefaults.buttonColors(containerColor = SecondaryGold),
+                        shape = RoundedCornerShape(12.dp)
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Add New Card")
+                        Text("Add Your First Card")
+                    }
+                }
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(NeutralLightGray)
+                        .padding(padding)
+                ) {
+                    // Card Carousel
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp)
+                    ) {
+                        selectedCard?.let { card ->
+                            FullCardDisplay(
+                                card = card,
+                                onCardClick = { cardId ->
+                                    navController.navigate("card_detail/$cardId")
+                                }
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Card selector
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            cards.forEach { card ->
+                                CardSelectorDot(
+                                    isSelected = card.id == selectedCard?.id,
+                                    onClick = { selectedCard = card }
+                                )
+                            }
+                        }
+                    }
+
+                    // Card Info Section
+                    selectedCard?.let { card ->
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(20.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            item {
+                                Text(
+                                    text = "Card Details",
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = PrimaryNavyBlue
+                                )
+                            }
+
+                            item {
+                                CardInfoRow("Card Number", maskFullCard(card.cardNumber))
+                            }
+                            item {
+                                CardInfoRow("Card Holder", card.cardHolder)
+                            }
+                            item {
+                                CardInfoRow("Expiry Date", card.expiryDate)
+                            }
+                            item {
+                                CardInfoRow("Card Type", card.cardType.name)
+                            }
+                            item {
+                                CardInfoRow("Balance", formatCurrency(card.balance))
+                            }
+
+                            item {
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
+
+                            item {
+                                Button(
+                                    onClick = { viewModel.setDefaultCard(card.id) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (card.isDefault) SemanticGreen else PrimaryNavyBlue
+                                    ),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = if (card.isDefault) Icons.Default.Check else Icons.Default.Star,
+                                        contentDescription = null
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(if (card.isDefault) "Default Card" else "Set as Default")
+                                }
+                            }
+
+                            item {
+                                OutlinedButton(
+                                    onClick = onAddCard,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        contentColor = SecondaryGold
+                                    )
+                                ) {
+                                    Icon(Icons.Default.Add, contentDescription = null)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Add New Card")
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
-    }
-}
+    }    // end SecureScreenFlag
+}    // end MyCardsScreen
+
+// ==================== Private Composables ====================
 
 @Composable
 private fun DetailedCardItem(
-    card: BankCard,
-    onClick: () -> Unit
+    card: com.example.aureus.domain.model.BankCard,
+    onClick: (String) -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .height(200.dp)
-            .clickable(onClick = onClick),
+            .clickable(onClick = { onClick(card.id) }),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent)
     ) {
@@ -354,14 +463,14 @@ private fun DetailedCardItem(
 
 @Composable
 private fun FullCardDisplay(
-    card: BankCard,
-    onCardClick: () -> Unit
+    card: com.example.aureus.domain.model.BankCard,
+    onCardClick: (String) -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .height(220.dp)
-            .clickable(onClick = onCardClick),
+            .clickable(onClick = { onCardClick(card.id) }),
         shape = RoundedCornerShape(20.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent)
@@ -547,19 +656,4 @@ private fun AddCardButton(onClick: () -> Unit) {
             )
         }
     }
-}
-
-private fun formatCurrency(amount: Double): String {
-    val format = NumberFormat.getCurrencyInstance(Locale("fr", "MA"))
-    format.currency = Currency.getInstance("MAD")
-    return format.format(amount).replace("MAD", "").trim() + " MAD"
-}
-
-private fun maskCardNumber(cardNumber: String): String {
-    return "**** " + cardNumber.takeLast(4)
-}
-
-private fun maskFullCard(cardNumber: String): String {
-    val parts = cardNumber.split(" ")
-    return "**** **** **** ${parts.last()}"
 }

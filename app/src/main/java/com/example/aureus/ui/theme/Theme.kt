@@ -9,6 +9,8 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
 /**
@@ -17,38 +19,38 @@ import androidx.compose.ui.platform.LocalContext
  */
 private val DarkColorScheme = darkColorScheme(
     // Primaires
-    primary = PrimaryNavyBlue,
+    primary = DarkThemeColors.PrimaryNavyBlueDark,
     onPrimary = NeutralWhite,
-    primaryContainer = PrimaryMediumBlue,
+    primaryContainer = DarkThemeColors.PrimaryMediumBlueDark,
     onPrimaryContainer = NeutralWhite,
-    
+
     // Secondaires
-    secondary = SecondaryGold,
-    onSecondary = PrimaryNavyBlue,
-    secondaryContainer = SecondaryDarkGold,
+    secondary = DarkThemeColors.SecondaryGoldDark,
+    onSecondary = DarkThemeColors.PrimaryNavyBlueDark,
+    secondaryContainer = DarkThemeColors.SecondaryDarkGoldDark,
     onSecondaryContainer = NeutralWhite,
-    
+
     // Tertiaires
-    tertiary = PrimaryMediumBlue,
+    tertiary = DarkThemeColors.PrimaryLightBlueDark,
     onTertiary = NeutralWhite,
-    
+
     // Erreur
-    error = SemanticRed,
+    error = DarkThemeColors.SemanticRedDark,
     onError = NeutralWhite,
-    errorContainer = SemanticRed,
+    errorContainer = DarkThemeColors.SemanticRedDark,
     onErrorContainer = NeutralWhite,
-    
+
     // Background & Surface
-    background = NeutralDarkGray,
-    onBackground = NeutralWhite,
-    surface = PrimaryNavyBlue,
-    onSurface = NeutralWhite,
-    surfaceVariant = PrimaryMediumBlue,
-    onSurfaceVariant = NeutralWhite,
-    
+    background = DarkThemeColors.PrimaryNavyBlueDark,
+    onBackground = DarkThemeColors.NeutralWhiteDark,
+    surface = DarkThemeColors.PrimaryMediumBlueDark,
+    onSurface = DarkThemeColors.NeutralWhiteDark,
+    surfaceVariant = DarkThemeColors.PrimaryLightBlueDark,
+    onSurfaceVariant = DarkThemeColors.NeutralWhiteDark,
+
     // Outline
-    outline = NeutralMediumGray,
-    outlineVariant = ColorVariants.NeutralMediumGray50
+    outline = DarkThemeColors.NeutralMediumGrayDark,
+    outlineVariant = DarkThemeColors.NeutralMediumGrayDark.copy(alpha = 0.5f)
 )
 
 /**
@@ -100,7 +102,7 @@ private val LightColorScheme = lightColorScheme(
 
 /**
  * Thème principal de l'application Aureus
- * 
+ *
  * @param darkTheme Active le mode sombre si true
  * @param dynamicColor Active les couleurs dynamiques Android 12+ (désactivé par défaut pour cohérence)
  * @param content Contenu de l'application
@@ -122,9 +124,67 @@ fun AureusTheme(
         else -> LightColorScheme
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
-    )
+    val appColors = AppColors(darkTheme)
+
+    CompositionLocalProvider(LocalAppColors provides appColors) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = Typography,
+            content = content
+        )
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// APP COLOR SCHEME INTERFACE (PHASE 12)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Interface pour le schéma de couleurs de l'application
+ * Permet un accès uniforme aux couleurs en mode clair et sombre
+ */
+interface AppColorScheme {
+    val primaryNavyBlue: Color
+    val primaryMediumBlue: Color
+    val primaryLightBlue: Color
+    val secondaryGold: Color
+    val secondaryDarkGold: Color
+    val neutralBlack: Color
+    val neutralDarkGray: Color
+    val neutralMediumGray: Color
+    val neutralLightGray: Color
+    val neutralWhite: Color
+    val semanticGreen: Color
+    val semanticRed: Color
+    val semanticYellow: Color
+    val semanticBlue: Color
+    val isDark: Boolean
+}
+
+/**
+ * Implémentation du schéma de couleurs
+ */
+private class AppColors(isDark: Boolean) : AppColorScheme {
+    override val primaryNavyBlue = if (isDark) DarkThemeColors.PrimaryNavyBlueDark else PrimaryNavyBlue
+    override val primaryMediumBlue = if (isDark) DarkThemeColors.PrimaryMediumBlueDark else PrimaryMediumBlue
+    override val primaryLightBlue = if (isDark) DarkThemeColors.PrimaryLightBlueDark else PrimaryNavyBlue
+    override val secondaryGold = if (isDark) DarkThemeColors.SecondaryGoldDark else SecondaryGold
+    override val secondaryDarkGold = if (isDark) DarkThemeColors.SecondaryDarkGoldDark else SecondaryDarkGold
+    override val neutralBlack = if (isDark) DarkThemeColors.NeutralBlackDark else NeutralWhite
+    override val neutralDarkGray = if (isDark) DarkThemeColors.NeutralDarkGrayDark else NeutralDarkGray
+    override val neutralMediumGray = if (isDark) DarkThemeColors.NeutralMediumGrayDark else NeutralMediumGray
+    override val neutralLightGray = if (isDark) DarkThemeColors.NeutralLightGrayDark else NeutralLightGray
+    override val neutralWhite = if (isDark) DarkThemeColors.NeutralWhiteDark else NeutralWhite
+    override val semanticGreen = if (isDark) DarkThemeColors.SemanticGreenDark else SemanticGreen
+    override val semanticRed = if (isDark) DarkThemeColors.SemanticRedDark else SemanticRed
+    override val semanticYellow = if (isDark) DarkThemeColors.SemanticYellowDark else SemanticAmber
+    override val semanticBlue = if (isDark) DarkThemeColors.SemanticBlueDark else PrimaryMediumBlue
+    override val isDark = isDark
+}
+
+/**
+ * LocalAppColors - CompositionLocal pour accéder au schéma de couleurs
+ */
+val LocalAppColors = androidx.compose.runtime.compositionLocalOf<AppColorScheme> {
+    error("No AppColorScheme provided")
 }

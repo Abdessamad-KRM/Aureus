@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp"
+    android:height="96dp"
+    android:viewportWidth="96"
+    android:viewportHeight="96">
+    <!-- Grande icône avec dégradé pour les notifications -->
+    <path
+        android:fillColor="#1A237E"
+        android:pathData="M48,88c4.4,0 8,-3.6 8,-8H40c0,4.4 3.6,8 8,8z M72,64v-20c0,-12.28 -6.52,-22.56 -18,-25.28V16c0,-3.32 -2.68,-6 -6,-6s-6,2.68 -6,6v2.72C30.52,21.44 24,31.72 24,44v20l-8,8v4h64v-4l-8,-8z"/>
+</vector>

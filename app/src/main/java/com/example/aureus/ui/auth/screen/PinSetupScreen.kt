@@ -34,7 +34,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.aureus.data.firestore.PinFirestoreManager
 import com.example.aureus.domain.model.Resource
 import com.example.aureus.ui.auth.viewmodel.PinViewModel
 import com.example.aureus.ui.theme.*

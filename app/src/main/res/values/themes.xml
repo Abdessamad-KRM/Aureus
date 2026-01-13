@@ -1,5 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
+    <!-- Main App Theme -->
     <style name="Theme.Aureus" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!-- Splash Screen Starting Theme - Used only during app launch -->
+    <!-- Phase 15: Performance Optimization - Startup Time Optimization -->
+    <style name="Theme.Aureus.Starting" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="windowSplashScreenBackground">@color/primary_navy_blue</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/logo</item>
+        <item name="windowSplashScreenAnimationDuration">1000</item>
+        <item name="postSplashScreenTheme">@style/Theme.Aureus</item>
+    </style>
+
+    <!-- Splash Screen Theme (optional - for custom background) -->
+    <style name="Theme.Aureus.Splash" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@drawable/splash_background</item>
+        <item name="android:statusBarColor">@color/primary_navy_blue</item>
+    </style>
 </resources>

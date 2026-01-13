@@ -1,55 +1,55 @@
 package com.example.aureus.data.repository
 
-import com.example.aureus.data.local.dao.UserDao
-import com.example.aureus.data.local.entity.UserEntity
-import com.example.aureus.data.remote.RetrofitClient
-import com.example.aureus.data.remote.dto.LoginRequest
-import com.example.aureus.data.remote.dto.LoginResponse
+import com.example.aureus.data.remote.firebase.FirebaseAuthManager
+import com.example.aureus.data.remote.firebase.FirebaseDataManager
 import com.example.aureus.domain.model.Resource
 import com.example.aureus.domain.model.User
 import com.example.aureus.domain.repository.AuthRepository
-import com.example.aureus.util.SharedPreferencesManager
+import com.google.firebase.auth.FirebaseUser
+import kotlinx.coroutines.tasks.await
+import javax.inject.Inject
 
 /**
- * Authentication Repository Implementation
+ * Firebase-only Authentication Repository Implementation
+ * Completely removes static/demo account logic
  */
-class AuthRepositoryImpl(
-    private val userDao: UserDao,
-    private val preferencesManager: SharedPreferencesManager
+class AuthRepositoryImpl @Inject constructor(
+    private val authManager: FirebaseAuthManager,
+    private val dataManager: FirebaseDataManager
 ) : AuthRepository {
-
-    private val authApi = RetrofitClient.authApiService
 
     override suspend fun login(email: String, password: String): Resource<User> {
         return try {
-            val response = authApi.login(LoginRequest(email = email, password = password))
+            // Firebase email/password authentication
+            val result = authManager.loginWithEmail(email, password)
 
-            if (response.isSuccessful && response.body() != null) {
-                val loginResponse = response.body()!!
+            if (result.isSuccess) {
+                val firebaseUser = result.getOrNull()!!
+                val now = com.google.firebase.Timestamp.now().toDate().toString()
 
-                // Save token to SharedPreferences
-                preferencesManager.saveToken(loginResponse.token)
-                preferencesManager.saveUserId(loginResponse.user.id)
-                preferencesManager.setLoggedIn(true)
-
-                // Save user to local database
-                val userEntity = UserEntity(
-                    id = loginResponse.user.id,
-                    email = loginResponse.user.email,
-                    firstName = loginResponse.user.firstName,
-                    lastName = loginResponse.user.lastName,
-                    phone = loginResponse.user.phone,
-                    createdAt = loginResponse.user.createdAt,
-                    updatedAt = loginResponse.user.updatedAt
+                // Get user data from Firestore or return minimal user object
+                val user = User(
+                    id = firebaseUser.uid,
+                    email = firebaseUser.email ?: email,
+                    firstName = firebaseUser.displayName?.split(" ")?.firstOrNull() ?: "User",
+                    lastName = firebaseUser.displayName?.split(" ")?.lastOrNull() ?: "",
+                    phone = firebaseUser.phoneNumber,
+                    createdAt = now,
+                    updatedAt = now
                 )
-                userDao.insertUser(userEntity)
 
-                Resource.Success(loginResponse.user.toDomainModel())
+                Resource.Success(user)
             } else {
-                Resource.Error("Login failed: ${response.message()}")
+                val error = result.exceptionOrNull()
+                val message = when (error) {
+                    is com.google.firebase.auth.FirebaseAuthInvalidCredentialsException -> "Email ou mot de passe incorrect"
+                    is com.google.firebase.auth.FirebaseAuthInvalidUserException -> "Utilisateur introuvable"
+                    else -> error?.message ?: "Erreur de connexion"
+                }
+                Resource.Error(message, error)
             }
         } catch (e: Exception) {
-            Resource.Error("An error occurred: ${e.message}", e)
+            Resource.Error("Une erreur est survenue: ${e.message}", e)
         }
     }
 
@@ -61,73 +61,157 @@ class AuthRepositoryImpl(
         phone: String?
     ): Resource<User> {
         return try {
-            val registerRequest = com.example.aureus.data.remote.dto.RegisterRequest(
-                email = email,
-                password = password,
-                firstName = firstName,
-                lastName = lastName,
-                phone = phone
-            )
+            // 1. Create Firebase Auth user
+            val authResult = authManager.registerWithEmail(email, password, firstName, lastName, phone ?: "")
 
-            val response = authApi.register(registerRequest)
+            if (authResult.isSuccess) {
+                val firebaseUser = authResult.getOrNull()!!
 
-            if (response.isSuccessful && response.body() != null) {
-                Resource.Success(response.body()!!.toDomainModel())
+                // 2. Create Firestore user document
+                val firestoreResult = dataManager.createUser(
+                    userId = firebaseUser.uid,
+                    email = email,
+                    firstName = firstName,
+                    lastName = lastName,
+                    phone = phone ?: "",
+                    pin = ""
+                )
+
+                if (firestoreResult.isSuccess) {
+                    val now = com.google.firebase.Timestamp.now().toDate().toString()
+
+                    // 3. Create default data (cards, transactions) for new users
+                    dataManager.createDefaultCards(firebaseUser.uid)
+                    dataManager.createDefaultTransactions(firebaseUser.uid)
+
+                    val user = User(
+                        id = firebaseUser.uid,
+                        email = email,
+                        firstName = firstName,
+                        lastName = lastName,
+                        phone = phone,
+                        createdAt = now,
+                        updatedAt = now
+                    )
+
+                    Resource.Success(user)
+                } else {
+                    // Rollback: delete Firebase Auth user if Firestore fails
+                    firebaseUser.delete().await()
+                    Resource.Error(firestoreResult.exceptionOrNull()?.message ?: "Erreur lors de la création du profil")
+                }
             } else {
-                Resource.Error("Registration failed: ${response.message()}")
+                val error = authResult.exceptionOrNull()
+                val message = when {
+                    error?.message?.contains("email") == true -> "Email déjà utilisé ou invalide"
+                    error?.message?.contains("password") == true -> "Le mot de passe doit contenir au moins 6 caractères"
+                    else -> error?.message ?: "L'inscription a échoué"
+                }
+                Resource.Error(message, error)
             }
         } catch (e: Exception) {
-            Resource.Error("An error occurred: ${e.message}", e)
+            Resource.Error("Une erreur est survenue: ${e.message}", e)
         }
     }
 
     override suspend fun logout(): Resource<Unit> {
         return try {
-            val token = "Bearer ${getToken()}"
-            authApi.logout(token)
-
-            // Clear local data
-            preferencesManager.clearUserData()
+            // Sign out from Firebase Auth
+            authManager.signOut()
 
             Resource.Success(Unit)
         } catch (e: Exception) {
-            // Even if API call fails, clear local data
-            preferencesManager.clearUserData()
-            Resource.Success(Unit)
+            Resource.Error("Erreur lors de la déconnexion: ${e.message}", e)
         }
     }
 
     override suspend fun getCurrentUser(): Resource<User> {
         return try {
-            val userId = getUserId() ?: return Resource.Error("User not logged in")
+            val firebaseUser = authManager.currentUser
+                ?: return Resource.Error("Aucun utilisateur connecté")
 
-            // Try to get from local database first
-            val localUser = userDao.getUserById(userId)
+            val now = com.google.firebase.Timestamp.now().toDate().toString()
 
-            // For simplicity, returning null as the dao returns Flow
-            // In real implementation, collect flow or use a different approach
-            Resource.Error("User not found")
+            val user = User(
+                id = firebaseUser.uid,
+                email = firebaseUser.email ?: "",
+                firstName = firebaseUser.displayName?.split(" ")?.firstOrNull() ?: "User",
+                lastName = firebaseUser.displayName?.split(" ")?.lastOrNull() ?: "",
+                phone = firebaseUser.phoneNumber,
+                createdAt = now,
+                updatedAt = now
+            )
+
+            Resource.Success(user)
         } catch (e: Exception) {
-            Resource.Error("An error occurred: ${e.message}", e)
+            Resource.Error("Erreur lors de la récupération de l'utilisateur: ${e.message}", e)
         }
     }
 
-    override fun isLoggedIn(): Boolean = preferencesManager.isLoggedIn()
+    override fun isLoggedIn(): Boolean = authManager.isUserLoggedIn()
 
-    override fun getToken(): String? = preferencesManager.getToken()
+    override fun getToken(): String? {
+        // Firebase tokens are managed automatically
+        // Return UID as a token identifier
+        return authManager.currentUser?.uid
+    }
 
-    override fun getUserId(): String? = preferencesManager.getUserId()
-}
+    override fun getUserId(): String? = authManager.currentUser?.uid
 
-// Extension functions for mapping
-fun com.example.aureus.data.remote.dto.UserResponse.toDomainModel(): User {
-    return User(
-        id = id,
-        email = email,
-        firstName = firstName,
-        lastName = lastName,
-        phone = phone,
-        createdAt = createdAt,
-        updatedAt = updatedAt
-    )
+    // ==================== ADDITIONAL METHODS ====================
+
+    /**
+     * Send password reset email
+     */
+    suspend fun resetPassword(email: String): Resource<Unit> {
+        return try {
+            val result = authManager.resetPassword(email)
+            if (result.isSuccess) {
+                Resource.Success(Unit)
+            } else {
+                Resource.Error(result.exceptionOrNull()?.message ?: "Erreur lors de l'envoi du mot de passe")
+            }
+        } catch (e: Exception) {
+            Resource.Error("Une erreur est survenue: ${e.message}", e)
+        }
+    }
+
+    /**
+     * Send email verification
+     */
+    suspend fun sendEmailVerification(): Resource<Unit> {
+        return try {
+            val result = authManager.sendEmailVerification()
+            if (result.isSuccess) {
+                Resource.Success(Unit)
+            } else {
+                Resource.Error(result.exceptionOrNull()?.message ?: "Erreur lors de l'envoi de la vérification")
+            }
+        } catch (e: Exception) {
+            Resource.Error("Une erreur est survenue: ${e.message}", e)
+        }
+    }
+
+    /**
+     * Update user password
+     */
+    suspend fun updatePassword(newPassword: String): Resource<Unit> {
+        return try {
+            val result = authManager.updatePassword(newPassword)
+            if (result.isSuccess) {
+                Resource.Success(Unit)
+            } else {
+                Resource.Error(result.exceptionOrNull()?.message ?: "Erreur lors de la mise à jour du mot de passe")
+            }
+        } catch (e: Exception) {
+            Resource.Error("Une erreur est survenue: ${e.message}", e)
+        }
+    }
+
+    /**
+     * Check if email is verified
+     */
+    fun isEmailVerified(): Boolean {
+        return authManager.currentUser?.isEmailVerified == true
+    }
 }

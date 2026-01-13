@@ -16,22 +16,59 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavHostController
+import com.example.aureus.domain.model.CardColor
+import com.example.aureus.domain.model.CardType
+import com.example.aureus.ui.cards.viewmodel.CardsViewModel
 import com.example.aureus.ui.theme.*
+import com.example.aureus.ui.navigation.Screen
+import com.example.aureus.ui.components.SecureBackHandler
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddCardScreen(
+    navController: NavHostController? = null,
+    viewModel: CardsViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit = {},
     onAddSuccess: () -> Unit = {}
 ) {
     var cardNumber by remember { mutableStateOf("") }
+    var pinVerified by remember { mutableStateOf(false) }
     var cardHolder by remember { mutableStateOf("") }
     var expiryDate by remember { mutableStateOf("") }
     var cvv by remember { mutableStateOf("") }
     var showSuccessDialog by remember { mutableStateOf(false) }
+    var showErrorMessage by remember { mutableStateOf<String?>(null) }
+    var showSecurityWarningDialog by remember { mutableStateOf(false) } // ✅ PHASE 5
+    var showExitConfirmationDialog by remember { mutableStateOf(false) } // ✅ PHASE 6
+
+    // Card type and color selection
+    var selectedCardType by remember { mutableStateOf(CardType.VISA) }
+    var selectedCardColor by remember { mutableStateOf(CardColor.NAVY) }
+
+    val isLoading by viewModel.isLoading.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
+
+    // Show error from ViewModel
+    LaunchedEffect(errorMessage) {
+        errorMessage?.let { showErrorMessage = it }
+    }
+
+    // ✅ PHASE 6: Secure back handler - prevent accidental back when user has entered data
+    SecureBackHandler(
+        enabled = true,
+        onBackRequest = {
+            if (cardNumber.isNotEmpty() || cardHolder.isNotEmpty() || expiryDate.isNotEmpty() || cvv.isNotEmpty()) {
+                // Show confirmation dialog if user has entered data
+                showExitConfirmationDialog = true
+            } else {
+                onNavigateBack()
+            }
+        }
+    )
 
     Scaffold(
         topBar = {
@@ -69,9 +106,7 @@ fun AddCardScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(
-                            brush = Brush.horizontalGradient(
-                                colors = listOf(PrimaryNavyBlue, PrimaryMediumBlue)
-                            )
+                            getCardGradient(selectedCardColor)
                         )
                         .padding(20.dp)
                 ) {
@@ -99,8 +134,8 @@ fun AddCardScreen(
 
                         Column {
                             Text(
-                                text = if (cardNumber.isEmpty()) "**** **** **** ****" 
-                                      else formatCardNumber(cardNumber),
+                                text = if (cardNumber.isEmpty()) "**** **** **** ****"
+                                      else formatCardNumberPreview(cardNumber),
                                 color = NeutralWhite,
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold,
@@ -137,6 +172,12 @@ fun AddCardScreen(
                                         fontWeight = FontWeight.Medium
                                     )
                                 }
+                                Text(
+                                    text = selectedCardType.name,
+                                    color = SecondaryGold,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                         }
                     }
@@ -175,7 +216,8 @@ fun AddCardScreen(
                         focusedLabelColor = SecondaryGold,
                         focusedLeadingIconColor = SecondaryGold
                     ),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    enabled = !isLoading
                 )
 
                 // Card Holder
@@ -193,7 +235,8 @@ fun AddCardScreen(
                         focusedLabelColor = SecondaryGold,
                         focusedLeadingIconColor = SecondaryGold
                     ),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    enabled = !isLoading
                 )
 
                 // Expiry Date & CVV
@@ -201,7 +244,6 @@ fun AddCardScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Expiry Date
                     OutlinedTextField(
                         value = expiryDate,
                         onValueChange = {
@@ -221,31 +263,76 @@ fun AddCardScreen(
                             focusedLabelColor = SecondaryGold,
                             focusedLeadingIconColor = SecondaryGold
                         ),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        enabled = !isLoading
                     )
 
-                    // CVV
                     OutlinedTextField(
                         value = cvv,
                         onValueChange = {
-                            if (it.length <= 3 && it.all { char -> char.isDigit() }) {
+                            // ✅ PHASE 5: CVV validation - 3 chiffres pour Visa/MC, 4 pour Amex
+                            val maxLength = if (selectedCardType == CardType.AMEX) 4 else 3
+                            if (it.length <= maxLength && it.all { char -> char.isDigit() }) {
                                 cvv = it
                             }
                         },
-                        label = { Text("CVV") },
-                        placeholder = { Text("123") },
+                        label = { Text(if (selectedCardType == CardType.AMEX) "CID" else "CVV") },
+                        placeholder = { Text(if (selectedCardType == CardType.AMEX) "1234" else "123") },
                         leadingIcon = {
                             Icon(Icons.Default.Lock, contentDescription = null)
                         },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.weight(1f),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = SecondaryGold,
                             focusedLabelColor = SecondaryGold,
                             focusedLeadingIconColor = SecondaryGold
                         ),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        enabled = !isLoading
                     )
+                }
+
+                // Card Type Selection
+                Text(
+                    text = "Card Type",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = PrimaryNavyBlue
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    CardType.values().forEach { type ->
+                        CardTypeButton(
+                            type = type,
+                            isSelected = selectedCardType == type,
+                            onClick = { selectedCardType = type },
+                            enabled = !isLoading
+                        )
+                    }
+                }
+
+                // Card Color Selection
+                Text(
+                    text = "Card Style",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = PrimaryNavyBlue
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    CardColor.values().forEach { color ->
+                        CardColorButton(
+                            color = color,
+                            isSelected = selectedCardColor == color,
+                            onClick = { selectedCardColor = color },
+                            enabled = !isLoading
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -281,28 +368,60 @@ fun AddCardScreen(
                 // Add Card Button
                 Button(
                     onClick = {
-                        if (cardNumber.length == 19 && cardHolder.isNotEmpty() && 
-                            expiryDate.length == 5 && cvv.length == 3) {
-                            showSuccessDialog = true
-                        }
+                        // ✅ SÉCURITÉ PHASE 5: Afficher avertissement de sécurité avant PIN
+                        showSecurityWarningDialog = true
                     },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
-                    enabled = cardNumber.length == 19 && cardHolder.isNotEmpty() && 
-                              expiryDate.length == 5 && cvv.length == 3,
+                    // ✅ PHASE 5: Validation CVV adaptée au type de carte
+                    enabled = cardNumber.length == 19 &&
+                              cardHolder.isNotEmpty() &&
+                              expiryDate.length == 5 &&
+                              cvv.length == (if (selectedCardType == CardType.AMEX) 4 else 3) &&
+                              !isLoading,
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = SecondaryGold
+                        containerColor = if (isLoading) NeutralMediumGray else SecondaryGold
                     ),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        "Add Card",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = NeutralWhite
+                        )
+                    } else {
+                        Icon(Icons.Default.Add, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            "Add Card",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                // Handle PIN verified state for card addition
+                if (pinVerified && !isLoading) {
+                    LaunchedEffect(Unit) {
+                        // ✅ SÉCURITÉ PHASE 5: CVV NEVER stored - sent as empty string
+                        viewModel.addCard(
+                            cardNumber = cardNumber,
+                            cardHolder = cardHolder,
+                            expiryDate = expiryDate,
+                            cvv = "",  // ✅ CVV jamais stocké, vide systématiquement
+                            cardType = selectedCardType,
+                            cardColor = selectedCardColor,
+                            onSuccess = {
+                                showSuccessDialog = true
+                                viewModel.clearError()
+                            },
+                            onError = { error ->
+                                showErrorMessage = error
+                            }
+                        )
+                        pinVerified = false
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(20.dp))
@@ -340,6 +459,191 @@ fun AddCardScreen(
             containerColor = NeutralWhite
         )
     }
+
+    // Error Dialog
+    showErrorMessage?.let { error ->
+        AlertDialog(
+            onDismissRequest = { showErrorMessage = null },
+            icon = {
+                Icon(
+                    Icons.Default.Error,
+                    contentDescription = null,
+                    tint = SemanticRed,
+                    modifier = Modifier.size(48.dp)
+                )
+            },
+            title = { Text("Error") },
+            text = { Text(error) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showErrorMessage = null
+                        viewModel.clearError()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = SemanticRed
+                    )
+                ) {
+                    Text("OK")
+                }
+            },
+            containerColor = NeutralWhite
+        )
+    }
+
+    // ✅ PHASE 5: Security Warning Dialog before PIN verification
+    if (showSecurityWarningDialog) {
+        AlertDialog(
+            onDismissRequest = { showSecurityWarningDialog = false },
+            icon = {
+                Icon(
+                    Icons.Default.Security,
+                    contentDescription = null,
+                    tint = SecondaryGold,
+                    modifier = Modifier.size(48.dp)
+                )
+            },
+            title = {
+                Text(
+                    "Sécurité de votre carte",
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text("Pour protéger votre sécurité :")
+                    Text(
+                        "• Le CVV ne sera pas stocké",
+                        fontSize = 14.sp,
+                        color = PrimaryNavyBlue
+                    )
+                    Text(
+                        "• Le numéro de carte sera tokenisé",
+                        fontSize = 14.sp,
+                        color = PrimaryNavyBlue
+                    )
+                    Text(
+                        "• Veuillez confirmer avec votre PIN",
+                        fontSize = 14.sp,
+                        color = PrimaryNavyBlue
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showSecurityWarningDialog = false
+                        // ✅ SÉCURITÉ PHASE 2: Naviguer vers vérification PIN avant ajout carte
+                        navController?.navigate(Screen.PinVerification.route.replace("{action}", "add_card"))
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = SecondaryGold)
+                ) {
+                    Text("Continuer")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showSecurityWarningDialog = false }) {
+                    Text("Annuler")
+                }
+            },
+            containerColor = NeutralWhite
+        )
+    }
+
+    // ✅ PHASE 6: Exit Confirmation Dialog - prevent accidental exit
+    if (showExitConfirmationDialog) {
+        AlertDialog(
+            onDismissRequest = { showExitConfirmationDialog = false },
+            icon = {
+                Icon(
+                    Icons.Default.Warning,
+                    contentDescription = null,
+                    tint = SecondaryGold,
+                    modifier = Modifier.size(48.dp)
+                )
+            },
+            title = {
+                Text(
+                    "Discard Card Details?",
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    "You have entered card information. Are you sure you want to leave without adding the card?"
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showExitConfirmationDialog = false
+                        onNavigateBack()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = SemanticRed)
+                ) {
+                    Text("Leave")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showExitConfirmationDialog = false }) {
+                    Text("Stay")
+                }
+            },
+            containerColor = NeutralWhite
+        )
+    }
+}
+
+@Composable
+private fun CardTypeButton(
+    type: CardType,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    enabled: Boolean = true
+) {
+    FilterChip(
+        selected = isSelected,
+        onClick = onClick,
+        label = {
+            Text(
+                type.name,
+                                fontSize = 12.sp
+            )
+        },
+        modifier = Modifier.height(36.dp),
+        enabled = enabled,
+        colors = FilterChipDefaults.filterChipColors(
+            selectedContainerColor = SecondaryGold,
+            selectedLabelColor = NeutralWhite
+        )
+    )
+}
+
+@Composable
+private fun CardColorButton(
+    color: CardColor,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    enabled: Boolean = true
+) {
+    FilterChip(
+        selected = isSelected,
+        onClick = onClick,
+        label = {
+            Text(
+                color.name,
+                fontSize = 12.sp
+            )
+        },
+        modifier = Modifier.height(36.dp),
+        enabled = enabled,
+        colors = FilterChipDefaults.filterChipColors(
+            selectedContainerColor = getColorForCardColor(color),
+            selectedLabelColor = NeutralWhite
+        )
+    )
 }
 
 private fun formatCardNumberInput(input: String): String {
@@ -347,12 +651,11 @@ private fun formatCardNumberInput(input: String): String {
     return digitsOnly.chunked(4).joinToString(" ").take(19)
 }
 
-private fun formatCardNumber(input: String): String {
+private fun formatCardNumberPreview(input: String): String {
     val digitsOnly = input.filter { it.isDigit() }
-    return if (digitsOnly.length >= 4) {
-        "**** **** **** ${digitsOnly.takeLast(4)}"
-    } else {
-        "**** **** **** ****"
+    return when {
+        digitsOnly.length >= 4 -> "**** **** **** ${digitsOnly.takeLast(4)}"
+        else -> "**** **** **** ****"
     }
 }
 
@@ -362,4 +665,45 @@ private fun formatExpiryDate(input: String): String {
         digitsOnly.length <= 2 -> digitsOnly
         else -> "${digitsOnly.take(2)}/${digitsOnly.drop(2).take(2)}"
     }
+}
+
+private fun getCardGradient(color: CardColor): Brush {
+    return when (color) {
+        CardColor.NAVY -> Brush.horizontalGradient(
+            listOf(PrimaryNavyBlue, PrimaryMediumBlue)
+        )
+        CardColor.GOLD -> Brush.horizontalGradient(
+            listOf(SecondaryGold, SecondaryDarkGold)
+        )
+        CardColor.BLACK -> Brush.horizontalGradient(
+            listOf(androidx.compose.ui.graphics.Color(0xFF212121), androidx.compose.ui.graphics.Color(0xFF424242))
+        )
+        CardColor.BLUE -> Brush.horizontalGradient(
+            listOf(androidx.compose.ui.graphics.Color(0xFF1976D2), androidx.compose.ui.graphics.Color(0xFF42A5F5))
+        )
+        CardColor.PURPLE -> Brush.horizontalGradient(
+            listOf(androidx.compose.ui.graphics.Color(0xFF7B1FA2), androidx.compose.ui.graphics.Color(0xFF9C27B0))
+        )
+        CardColor.GREEN -> Brush.horizontalGradient(
+            listOf(androidx.compose.ui.graphics.Color(0xFF388E3C), androidx.compose.ui.graphics.Color(0xFF66BB6A))
+        )
+    }
+}
+
+private fun getColorForCardColor(color: CardColor): androidx.compose.ui.graphics.Color {
+    return when (color) {
+        CardColor.NAVY -> PrimaryNavyBlue
+        CardColor.GOLD -> SecondaryGold
+        CardColor.BLACK -> androidx.compose.ui.graphics.Color(0xFF212121)
+        CardColor.BLUE -> androidx.compose.ui.graphics.Color(0xFF1976D2)
+        CardColor.PURPLE -> androidx.compose.ui.graphics.Color(0xFF7B1FA2)
+        CardColor.GREEN -> androidx.compose.ui.graphics.Color(0xFF388E3C)
+    }
+}
+
+// ✅ PHASE 5: Fonction de validation CVV côté client
+private fun validateCVV(cvv: String, cardType: CardType): Boolean {
+    // Amex: 4 chiffres, Visa/MC: 3 chiffres
+    val requiredLength = if (cardType == CardType.AMEX) 4 else 3
+    return cvv.length == requiredLength && cvv.all { it.isDigit() }
 }

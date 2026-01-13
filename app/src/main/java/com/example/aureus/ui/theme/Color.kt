@@ -176,3 +176,33 @@ object AppGradients {
     val SuccessGradient = listOf(SemanticGreen, Color(0xFF059669))
     val PremiumGradient = listOf(PrimaryNavyBlue, SecondaryGold)
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// DARK THEME COLORS (PHASE 12)
+// ═══════════════════════════════════════════════════════════════════════════════
+/**
+ * Dark Theme Colors - Palette pour le mode sombre
+ */
+object DarkThemeColors {
+    // Primary Colors
+    val PrimaryNavyBlueDark = Color(0xFF0F172A)
+    val PrimaryMediumBlueDark = Color(0xFF1E293B)
+    val PrimaryLightBlueDark = Color(0xFF334155)
+
+    // Secondary
+    val SecondaryGoldDark = Color(0xFFD4AF37)
+    val SecondaryDarkGoldDark = Color(0xFFB8960C)
+
+    // Neutral Colors
+    val NeutralBlackDark = Color(0xFF000000)
+    val NeutralDarkGrayDark = Color(0xFF1F2937)
+    val NeutralMediumGrayDark = Color(0xFF4B5563)
+    val NeutralLightGrayDark = Color(0xFF9CA3AF)
+    val NeutralWhiteDark = Color(0xFFE5E7EB)
+
+    // Semantic Colors
+    val SemanticGreenDark = Color(0xFF10B981)
+    val SemanticRedDark = Color(0xFFEF4444)
+    val SemanticYellowDark = Color(0xFFF59E0B)
+    val SemanticBlueDark = Color(0xFF3B82F6)
+}

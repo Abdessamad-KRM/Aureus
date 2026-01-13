@@ -25,7 +25,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.aureus.R
+import com.example.aureus.ui.components.NotificationPermissionRequest
 import com.example.aureus.ui.theme.*
+import com.example.aureus.security.BiometricManager
 import kotlinx.coroutines.delay
 import kotlin.math.cos
 import kotlin.math.sin
@@ -36,10 +38,12 @@ import kotlin.math.sin
  */
 @Composable
 fun SplashScreenAdvanced(
+    biometricManager: BiometricManager,
     onSplashFinished: () -> Unit
 ) {
     var startAnimation by remember { mutableStateOf(false) }
-    
+    var showPermissionRequest by remember { mutableStateOf(true) }
+
     // Animations principales
     val alphaLogo by animateFloatAsState(
         targetValue = if (startAnimation) 1f else 0f,
@@ -242,6 +246,19 @@ fun SplashScreenAdvanced(
                 .alpha(alphaText)
         ) {
             ProgressIndicatorGold()
+        }
+
+        // Permission request dialog for Android 13+
+        if (showPermissionRequest) {
+            NotificationPermissionRequest(
+                onPermissionGranted = {
+                    showPermissionRequest = false
+                },
+                onDismiss = {
+                    showPermissionRequest = false
+                    // Continuer sans permission
+                }
+            )
         }
     }
 }

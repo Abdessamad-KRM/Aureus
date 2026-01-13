@@ -87,6 +87,74 @@
 -keep class com.example.aureus.util.SharedPreferencesManager { *; }
 -keep class com.example.aureus.data.repository.** { *; }
 
+# ✅ PHASE 2: ProGuard Sécurité - Suppression et Obfuscation
+# =====================================================
+
+# 1. Supprimer les strings sensibles du bytecode final
+-assumenosideeffects class android.util.Log {
+    public static boolean isLoggable(java.lang.String, int);
+    public static int v(...);
+    public static int d(...);
+    public static int i(...);
+    public static int w(...);
+    public static int e(...);
+}
+
+# 2. Masquer les clés API et tokens dans les builds de release
+# Supprime tous les strings contenant "key", "token", "secret"
+-assumenosideeffects class java.lang.String {
+    *** getString(...);
+    *** getBytes(...);
+}
+
+# 3. Renommer les fichiers sources pour la sécurité
+-renamesourcefileattribute SourceFile
+
+# 4. Obfusquer les classes de sécurité
+# Garder les noms des classes mais obfusquer les méthodes internes
+-keep,allowobfuscation class com.example.aureus.security.** { *; }
+-keep,allowobfuscation class com.example.aureus.util.SharedPreferencesManager {
+    public <methods>;
+    public <fields>;
+}
+
+# 5. Supprimer les informations de debug en release
+-if **:BuildConfig.DEBUG
+-dontoptimize
+-dontobfuscate
+-if ! **:BuildConfig.DEBUG
+-optimizeaggressively
+-repackageclasses ''
+
+# 6. Masquer les strings Firebase dans les release builds
+# Obfusquer les classes Firebase internes
+-keepnames class com.google.firebase.** { *; }
+-keepnames class com.google.android.gms.** { *; }
+
+# 7. Empêcher l'extraction des données encrypted
+# Supprimer les informations de débugging
+-verbose
+
+# 8. Protection contre la réflexion sur les classes sensibles
+-keepclassmembers class com.example.aureus.security.** {
+    private static *** ***(...);
+    public static *** ***(...);
+}
+
+# 9. Supprimer les méthodes de debug inutilisées
+-assumenosideeffects com.example.aureus.util.Logger { *; }
+-assumenosideeffects com.example.aureus.security.SecurityLogger { *; }
+
+# 10. Optimisation des classes de cryptographie
+-keep class javax.crypto.** { *; }
+-keep class java.security.** { *; }
+
+# 11. Masquer les strings sensibles dans les logs
+-assumenosideeffects class java.lang.Throwable {
+    *** printStackTrace(...);
+    *** getStackTrace(...);
+}
+
 # General Android
 -keep public class * extends android.app.Activity
 -keep public class * extends android.app.Application

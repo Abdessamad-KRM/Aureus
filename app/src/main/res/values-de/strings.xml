@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Aureus</string>
+    <string name="default_notification_channel_id">aureus_notifications</string>
+    
+    <!-- Authentication -->
+    <string name="login">Anmelden</string>
+    <string name="register">Registrieren</string>
+    <string name="email">E-Mail-Adresse</string>
+    <string name="password">Passwort</string>
+    <string name="first_name">Vorname</string>
+    <string name="last_name">Nachname</string>
+    <string name="phone">Telefonnummer</string>
+    <string name="logout">Abmelden</string>
+    
+    <!-- Dashboard -->
+    <string name="my_accounts">Meine Konten</string>
+    <string name="total_balance">Gesamtsaldo</string>
+    <string name="accounts">Konten</string>
+    <string name="welcome_back">Willkommen zurück</string>
+    
+    <!-- Transactions -->
+    <string name="transactions">Transaktionen</string>
+    <string name="recent_transactions">Letzte Transaktionen</string>
+    <string name="transaction_history">Transaktionsverlauf</string>
+    <string name="income">Einkommen</string>
+    <string name="expense">Ausgaben</string>
+    
+    <!-- Cards -->
+    <string name="my_cards">Meine Karten</string>
+    <string name="add_card">Neue Karte Hinzufügen</string>
+    <string name="card_management">Kartenverwaltung</string>
+    
+    <!-- Transfer -->
+    <string name="send_money">Geld Senden</string>
+    <string name="request_money">Geld Anfordern</string>
+    <string name="transfer">Übertragen</string>
+    
+    <!-- Contacts -->
+    <string name="contacts">Kontakte</string>
+    <string name="add_contact">Kontakt Hinzufügen</string>
+    <string name="recent_contacts">Letzte Kontakte</string>
+    
+    <!-- Statistics -->
+    <string name="statistics">Statistiken</string>
+    <string name="monthly_trends">Monatliche Trends</string>
+    <string name="spending_by_category">Ausgaben nach Kategorie</string>
+    
+    <!-- Profile -->
+    <string name="profile">Profil</string>
+    <string name="settings">Einstellungen</string>
+    <string name="edit_profile">Profil Bearbeiten</string>
+    
+    <!-- General -->
+    <string name="loading">Wird geladen...</string>
+    <string name="error">Fehler</string>
+    <string name="retry">Wiederholen</string>
+    <string name="refresh">Aktualisieren</string>
+    <string name="no_data">Keine Daten verfügbar</string>
+    <string name="cancel">Abbrechen</string>
+    <string name="confirm">Bestätigen</string>
+    <string name="delete">Löschen</string>
+    <string name="save">Speichern</string>
+    
+    <!-- Biometric -->
+    <string name="biometric_title">Aureus Banking Entsperren</string>
+    <string name="biometric_subtitle">Verwenden Sie Ihren Fingerabdruck um fortzufahren</string>
+    <string name="biometric_description">Berühren Sie den Sensor um Ihre Identität zu verifizieren</string>
+    
+    <!-- Offline -->
+    <string name="offline_mode">Offline-Modus</string>
+    <string name="offline_message">Sie sind offline. Einige Funktionen sind möglicherweise eingeschränkt.</string>
+    <string name="connecting">Verbinden...</string>
+    <string name="syncing">Synchronisiere...</string>
+    
+    <!-- Notifications -->
+    <string name="notification_transaction_title">Neue Transaktion</string>
+    <string name="notification_low_balance_title">Guthaben-Warnung</string>
+    <string name="notification_info_title">Information</string>
+    
+    <!-- Language Selection -->
+    <string name="language">Sprache</string>
+    <string name="language_changed">Sprache erfolgreich geändert</string>
+    
+    <!-- Theme -->
+    <string name="theme">Design</string>
+    <string name="light_mode">Heller Modus</string>
+    <string name="dark_mode">Dunkler Modus</string>
+    
+    <!-- Card Details -->
+    <string name="card_number">Kartennummer</string>
+    <string name="card_holder">Karteninhaber</string>
+    <string name="expiry_date">Ablaufdatum</string>
+    <string name="cvv">CVV</string>
+    
+    <!-- Messages -->
+    <string name="success">Erfolgreich</string>
+    <string name="failed">Fehlgeschlagen</string>
+    <string name="pending">Ausstehend</string>
+
+    <!-- Error Messages -->
+    <string name="error_user_not_logged_in">Bitte einloggen um fortzufahren</string>
+    <string name="error_loading_data">Fehler beim Laden der Daten</string>
+    <string name="error_network">Netzwerkfehler. Bitte überprüfen Sie Ihre Verbindung.</string>
+    <string name="error_unknown">Ein unerwarteter Fehler ist aufgetreten</string>
+
+    <!-- Empty States -->
+    <string name="empty_contacts">Keine Kontakte</string>
+    <string name="empty_transactions">Keine Transaktionen</string>
+    <string name="empty_cards">Keine Karten</string>
+    <string name="add_first_contact">Fügen Sie Ihren ersten Kontakt hinzu</string>
+    <string name="add_first_card">Fügen Sie Ihre erste Karte hinzu</string>
+
+    <!-- Success Messages -->
+    <string name="success_profile_updated">Profil erfolgreich aktualisiert</string>
+    <string name="success_settings_updated">Einstellungen aktualisiert</string>
+    <string name="success_card_added">Karte erfolgreich hinzugefügt</string>
+    <string name="success_contact_added">Kontakt hinzugefügt</string>
+
+    <!-- Biometric -->
+    <string name="biometric_not_available">Biometrische Authentifizierung nicht verfügbar</string>
+    <string name="biometric_not_enrolled">Keine Biometrie auf diesem Gerät konfiguriert</string>
+    <string name="biometric_error">Fehler bei biometrischer Authentifizierung</string>
+
+    <!-- PIN -->
+    <string name="pin_required">PIN ist erforderlich</string>
+    <string name="pin_incorrect">Falsche PIN</string>
+    <string name="pin_setup_success">PIN erfolgreich konfiguriert</string>
+    <string name="pin_lockout_title">Zu viele Versuche</string>
+    <string name="pin_lockout_message">Ihr Konto ist vorübergehend aus Sicherheitsgründen gesperrt.</string>
+
+    <!-- Google Sign-In -->
+    <string name="default_web_client_id">437186810132-mnnu9vei8sf7jivuuh8t6o9b71ldinal.apps.googleusercontent.com</string>
+</resources>

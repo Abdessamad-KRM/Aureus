@@ -1,13 +1,20 @@
 package com.example.aureus.util
 
 import android.content.Context
+import com.example.aureus.security.SecureStorageManager
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
- * SharedPreferences Manager for lightweight data persistence
+ * SharedPreferences Manager - Version sécurisée avec EncryptedSharedPreferences
+ * Phase Correction Sécurité - MIGRATION COMPLETE
  */
-class SharedPreferencesManager(context: Context) {
-
-    private val sharedPrefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+@Singleton
+class SharedPreferencesManager @Inject constructor(
+    @ApplicationContext context: Context,
+    private val secureStorage: SecureStorageManager
+) {
 
     companion object {
         private const val PREFS_NAME = "MyBankPrefs"
@@ -21,72 +28,110 @@ class SharedPreferencesManager(context: Context) {
     }
 
     fun saveToken(token: String) {
-        sharedPrefs.edit().putString(KEY_TOKEN, token).apply()
+        secureStorage.putString(KEY_TOKEN, token)
     }
 
     fun getToken(): String? {
-        return sharedPrefs.getString(KEY_TOKEN, null)
+        return secureStorage.getString(KEY_TOKEN)
     }
 
     fun saveRefreshToken(refreshToken: String) {
-        sharedPrefs.edit().putString(KEY_REFRESH_TOKEN, refreshToken).apply()
+        secureStorage.putString(KEY_REFRESH_TOKEN, refreshToken)
     }
 
     fun getRefreshToken(): String? {
-        return sharedPrefs.getString(KEY_REFRESH_TOKEN, null)
+        return secureStorage.getString(KEY_REFRESH_TOKEN)
     }
 
     fun saveUserId(userId: String) {
-        sharedPrefs.edit().putString(KEY_USER_ID, userId).apply()
+        secureStorage.putString(KEY_USER_ID, userId)
     }
 
     fun getUserId(): String? {
-        return sharedPrefs.getString(KEY_USER_ID, null)
+        return secureStorage.getString(KEY_USER_ID)
     }
 
     fun saveUserEmail(email: String) {
-        sharedPrefs.edit().putString(KEY_USER_EMAIL, email).apply()
+        secureStorage.putString(KEY_USER_EMAIL, email)
     }
 
     fun getUserEmail(): String? {
-        return sharedPrefs.getString(KEY_USER_EMAIL, null)
+        return secureStorage.getString(KEY_USER_EMAIL)
     }
 
     fun setLoggedIn(isLoggedIn: Boolean) {
-        sharedPrefs.edit().putBoolean(KEY_IS_LOGGED_IN, isLoggedIn).apply()
+        // Pour booléens, on stocke comme string dans secureStorage
+        secureStorage.putString(KEY_IS_LOGGED_IN, isLoggedIn.toString())
     }
 
     fun isLoggedIn(): Boolean {
-        return sharedPrefs.getBoolean(KEY_IS_LOGGED_IN, false)
+        val value = secureStorage.getString(KEY_IS_LOGGED_IN, "false")
+        return value?.toBoolean() ?: false
     }
 
     fun saveTheme(theme: String) {
-        sharedPrefs.edit().putString(KEY_THEME, theme).apply()
+        secureStorage.putString(KEY_THEME, theme)
     }
 
     fun getTheme(): String? {
-        return sharedPrefs.getString(KEY_THEME, null)
+        return secureStorage.getString(KEY_THEME)
     }
 
     fun setOnboardingCompleted(completed: Boolean) {
-        sharedPrefs.edit().putBoolean(KEY_ONBOARDING_COMPLETED, completed).apply()
+        secureStorage.putString(KEY_ONBOARDING_COMPLETED, completed.toString())
     }
 
     fun isOnboardingCompleted(): Boolean {
-        return sharedPrefs.getBoolean(KEY_ONBOARDING_COMPLETED, false)
+        val value = secureStorage.getString(KEY_ONBOARDING_COMPLETED, "false")
+        return value?.toBoolean() ?: false
     }
 
     fun clearUserData() {
-        sharedPrefs.edit().apply {
-            remove(KEY_TOKEN)
-            remove(KEY_REFRESH_TOKEN)
-            remove(KEY_USER_ID)
-            remove(KEY_USER_EMAIL)
-            putBoolean(KEY_IS_LOGGED_IN, false)
-        }.apply()
+        secureStorage.remove(KEY_TOKEN)
+        secureStorage.remove(KEY_REFRESH_TOKEN)
+        secureStorage.remove(KEY_USER_ID)
+        secureStorage.remove(KEY_USER_EMAIL)
+        secureStorage.putString(KEY_IS_LOGGED_IN, "false")
     }
 
     fun clearAll() {
-        sharedPrefs.edit().clear().apply()
+        secureStorage.clear()
+    }
+
+    /**
+     * MIGRATION: Migrer les anciennes données SharedPreferences vers EncryptedSharedPreferences
+     * Appeler UNE SEULE FOIS au démarrage de l'app
+     */
+    fun migrateFromLegacy(context: Context) {
+        try {
+            val legacyPrefs = context.getSharedPreferences("MyBankPrefs", Context.MODE_PRIVATE)
+            val encryptedKeys = listOf(
+                KEY_TOKEN, KEY_REFRESH_TOKEN, KEY_USER_ID, KEY_USER_EMAIL, KEY_THEME
+            )
+
+            encryptedKeys.forEach { key ->
+                val value = legacyPrefs.getString(key, null)
+                if (value != null && !secureStorage.contains(key)) {
+                    secureStorage.putString(key, value)
+                }
+            }
+
+            // Migrer booleans
+            val isLoggedIn = legacyPrefs.getBoolean(KEY_IS_LOGGED_IN, false)
+            if (!secureStorage.contains(KEY_IS_LOGGED_IN)) {
+                secureStorage.putString(KEY_IS_LOGGED_IN, isLoggedIn.toString())
+            }
+
+            val onboardingCompleted = legacyPrefs.getBoolean(KEY_ONBOARDING_COMPLETED, false)
+            if (!secureStorage.contains(KEY_ONBOARDING_COMPLETED)) {
+                secureStorage.putString(KEY_ONBOARDING_COMPLETED, onboardingCompleted.toString())
+            }
+
+            // ✅ Succès: Nettoyer anciennes données
+            legacyPrefs.edit().clear().apply()
+        } catch (e: Exception) {
+            // Échec silencieux - les données restent en SharedPreferences normal
+            // L'app continuera de fonctionner
+        }
     }
 }

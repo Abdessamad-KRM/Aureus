@@ -18,12 +18,13 @@ import androidx.room.Index
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index("accountId")]
+    indices = [Index("accountId"), Index("date"), Index("type")]
 )
 data class TransactionEntity(
     @PrimaryKey
     val id: String,
     val accountId: String,
+    val userId: String? = null, // Added userId for better sync management
     val type: String, // "CREDIT" or "DEBIT"
     val amount: Double,
     val description: String,
@@ -31,5 +32,9 @@ data class TransactionEntity(
     val merchant: String?,
     val date: String,
     val balanceAfter: Double,
-    val lastSyncedAt: Long = System.currentTimeMillis()
+    val lastSyncedAt: Long = System.currentTimeMillis(),
+    @androidx.room.ColumnInfo(name = "is_synced")
+    val isSynced: Boolean = false,
+    @androidx.room.ColumnInfo(name = "is_pending_upload")
+    val isPendingUpload: Boolean = false
 )

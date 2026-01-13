@@ -20,23 +20,50 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.aureus.data.TestAccount
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.aureus.ui.profile.viewmodel.ProfileViewModel
 import com.example.aureus.ui.theme.*
 
+// Edit Profile Screen - Migrated to use dynamic Firebase data (Phase 5)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditProfileScreen(
     onNavigateBack: () -> Unit = {},
-    onSaveClick: () -> Unit = {}
+    onSaveClick: () -> Unit = {},
+    viewModel: ProfileViewModel = hiltViewModel()
 ) {
-    val user = TestAccount.user
-    var firstName by remember { mutableStateOf(user.firstName) }
-    var lastName by remember { mutableStateOf(user.lastName) }
-    var email by remember { mutableStateOf(user.email) }
-    var phone by remember { mutableStateOf(user.phone) }
-    var address by remember { mutableStateOf(user.address ?: "") }
-    var city by remember { mutableStateOf(user.city ?: "") }
+    val currentUser by viewModel.currentUser.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val successMessage by viewModel.successMessage.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
+
+    // Form state
+    var firstName by remember { mutableStateOf(currentUser?.firstName ?: "") }
+    var lastName by remember { mutableStateOf(currentUser?.lastName ?: "") }
+    var email by remember { mutableStateOf(currentUser?.email ?: "") }
+    var phone by remember { mutableStateOf(currentUser?.phone ?: "") }
+    var address by remember { mutableStateOf(currentUser?.address ?: "") }
+    var city by remember { mutableStateOf(currentUser?.city ?: "") }
     var showSuccessDialog by remember { mutableStateOf(false) }
+
+    // Update form when user data changes
+    LaunchedEffect(currentUser) {
+        currentUser?.let {
+            firstName = it.firstName
+            lastName = it.lastName
+            email = it.email
+            phone = it.phone ?: ""
+            address = it.address ?: ""
+            city = it.city ?: ""
+        }
+    }
+
+    // Handle success message
+    LaunchedEffect(successMessage) {
+        if (successMessage != null) {
+            showSuccessDialog = true
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -228,8 +255,19 @@ fun EditProfileScreen(
                 // Save Button
                 Button(
                     onClick = {
-                        showSuccessDialog = true
+                        if (currentUser != null) {
+                            viewModel.updateProfile(
+                                firstName = firstName,
+                                lastName = lastName,
+                                email = email,
+                                phone = phone,
+                                address = address.ifBlank { null },
+                                city = city.ifBlank { null },
+                                country = currentUser!!.country
+                            )
+                        }
                     },
+                    enabled = !isLoading,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
@@ -265,15 +303,44 @@ fun EditProfileScreen(
                 )
             },
             title = { Text("Success!") },
-            text = { Text("Your profile has been updated successfully.") },
+            text = { Text(successMessage ?: "Your profile has been updated successfully.") },
             confirmButton = {
                 Button(
                     onClick = {
                         showSuccessDialog = false
+                        viewModel.clearSuccessMessage()
                         onSaveClick()
                     },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = SemanticGreen
+                    )
+                ) {
+                    Text("OK")
+                }
+            },
+            containerColor = NeutralWhite
+        )
+    }
+
+    // Error dialog for error messages
+    if (errorMessage != null) {
+        AlertDialog(
+            onDismissRequest = { viewModel.clearErrorMessage() },
+            icon = {
+                Icon(
+                    Icons.Default.Error,
+                    contentDescription = null,
+                    tint = SemanticRed,
+                    modifier = Modifier.size(48.dp)
+                )
+            },
+            title = { Text("Error") },
+            text = { Text(errorMessage ?: "An unknown error occurred") },
+            confirmButton = {
+                Button(
+                    onClick = { viewModel.clearErrorMessage() },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = SemanticRed
                     )
                 ) {
                     Text("OK")

@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Aureus</string>
+    <string name="default_notification_channel_id">aureus_notifications</string>
+    
+    <!-- Authentication -->
+    <string name="login">Iniciar Sesión</string>
+    <string name="register">Registrarse</string>
+    <string name="email">Correo Electrónico</string>
+    <string name="password">Contraseña</string>
+    <string name="first_name">Nombre</string>
+    <string name="last_name">Apellido</string>
+    <string name="phone">Número de Teléfono</string>
+    <string name="logout">Cerrar Sesión</string>
+    
+    <!-- Dashboard -->
+    <string name="my_accounts">Mis Cuentas</string>
+    <string name="total_balance">Saldo Total</string>
+    <string name="accounts">Cuentas</string>
+    <string name="welcome_back">Bienvenido de nuevo</string>
+    
+    <!-- Transactions -->
+    <string name="transactions">Transacciones</string>
+    <string name="recent_transactions">Transacciones Recientes</string>
+    <string name="transaction_history">Historial de Transacciones</string>
+    <string name="income">Ingresos</string>
+    <string name="expense">Gastos</string>
+    
+    <!-- Cards -->
+    <string name="my_cards">Mis Tarjetas</string>
+    <string name="add_card">Agregar Nueva Tarjeta</string>
+    <string name="card_management">Gestión de Tarjetas</string>
+    
+    <!-- Transfer -->
+    <string name="send_money">Enviar Dinero</string>
+    <string name="request_money">Solicitar Dinero</string>
+    <string name="transfer">Transferir</string>
+    
+    <!-- Contacts -->
+    <string name="contacts">Contactos</string>
+    <string name="add_contact">Agregar Contacto</string>
+    <string name="recent_contacts">Contactos Recientes</string>
+    
+    <!-- Statistics -->
+    <string name="statistics">Estadísticas</string>
+    <string name="monthly_trends">Tendencias Mensuales</string>
+    <string name="spending_by_category">Gastos por Categoría</string>
+    
+    <!-- Profile -->
+    <string name="profile">Perfil</string>
+    <string name="settings">Configuración</string>
+    <string name="edit_profile">Editar Perfil</string>
+    
+    <!-- General -->
+    <string name="loading">Cargando...</string>
+    <string name="error">Error</string>
+    <string name="retry">Reintentar</string>
+    <string name="refresh">Actualizar</string>
+    <string name="no_data">Sin datos disponibles</string>
+    <string name="cancel">Cancelar</string>
+    <string name="confirm">Confirmar</string>
+    <string name="delete">Eliminar</string>
+    <string name="save">Guardar</string>
+    
+    <!-- Biometric -->
+    <string name="biometric_title">Desbloquear Aureus Banking</string>
+    <string name="biometric_subtitle">Use su huella digital para continuar</string>
+    <string name="biometric_description">Toque el sensor para verificar su identidad</string>
+    
+    <!-- Offline -->
+    <string name="offline_mode">Modo sin conexión</string>
+    <string name="offline_message">Estás desconectado. Algunas funciones pueden estar limitadas.</string>
+    <string name="connecting">Conectando...</string>
+    <string name="syncing">Sincronizando...</string>
+    
+    <!-- Notifications -->
+    <string name="notification_transaction_title">Nueva Transacción</string>
+    <string name="notification_low_balance_title">Alerta de Saldo Bajo</string>
+    <string name="notification_info_title">Información</string>
+    
+    <!-- Language Selection -->
+    <string name="language">Idioma</string>
+    <string name="language_changed">Idioma cambiado correctamente</string>
+    
+    <!-- Theme -->
+    <string name="theme">Tema</string>
+    <string name="light_mode">Modo Claro</string>
+    <string name="dark_mode">Modo Oscuro</string>
+    
+    <!-- Card Details -->
+    <string name="card_number">Número de Tarjeta</string>
+    <string name="card_holder">Titular de la Tarjeta</string>
+    <string name="expiry_date">Fecha de Vencimiento</string>
+    <string name="cvv">CVV</string>
+    
+    <!-- Messages -->
+    <string name="success">Éxito</string>
+    <string name="failed">Fallido</string>
+    <string name="pending">Pendiente</string>
+
+    <!-- Error Messages -->
+    <string name="error_user_not_logged_in">Por favor inicie sesión para continuar</string>
+    <string name="error_loading_data">Error al cargar datos</string>
+    <string name="error_network">Error de red. Por favor verifique su conexión.</string>
+    <string name="error_unknown">Ha ocurrido un error inesperado</string>
+
+    <!-- Empty States -->
+    <string name="empty_contacts">Sin contactos</string>
+    <string name="empty_transactions">Sin transacciones</string>
+    <string name="empty_cards">Sin tarjetas</string>
+    <string name="add_first_contact">Agregue su primer contacto</string>
+    <string name="add_first_card">Agregue su primera tarjeta</string>
+
+    <!-- Success Messages -->
+    <string name="success_profile_updated">Perfil actualizado exitosamente</string>
+    <string name="success_settings_updated">Configuración actualizada</string>
+    <string name="success_card_added">Tarjeta agregada exitosamente</string>
+    <string name="success_contact_added">Contacto agregado</string>
+
+    <!-- Biometric -->
+    <string name="biometric_not_available">La autenticación biométrica no está disponible</string>
+    <string name="biometric_not_enrolled">No hay biométrica configurada en este dispositivo</string>
+    <string name="biometric_error">Error de autenticación biométrica</string>
+
+    <!-- PIN -->
+    <string name="pin_required">Se requiere PIN</string>
+    <string name="pin_incorrect">PIN incorrecto</string>
+    <string name="pin_setup_success">PIN configurado exitosamente</string>
+    <string name="pin_lockout_title">Demasiados intentos</string>
+    <string name="pin_lockout_message">Su cuenta está temporalmente bloqueada por razones de seguridad.</string>
+
+    <!-- Google Sign-In -->
+    <string name="default_web_client_id">437186810132-mnnu9vei8sf7jivuuh8t6o9b71ldinal.apps.googleusercontent.com</string>
+</resources>

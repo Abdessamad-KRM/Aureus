@@ -1,39 +1,131 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Aureus</string>
-    <string name="default_notification_channel_id">mybank_default_channel</string>
+    <string name="default_notification_channel_id">aureus_notifications</string>
     
     <!-- Authentication -->
-    <string name="login">Login</string>
-    <string name="register">Register</string>
+    <string name="login">Connexion</string>
+    <string name="register">Inscription</string>
     <string name="email">Email</string>
-    <string name="password">Password</string>
-    <string name="first_name">First Name</string>
-    <string name="last_name">Last Name</string>
-    <string name="phone">Phone</string>
-    <string name="logout">Logout</string>
-    
+    <string name="password">Mot de passe</string>
+    <string name="first_name">Prénom</string>
+    <string name="last_name">Nom</string>
+    <string name="phone">Téléphone</string>
+    <string name="logout">Déconnexion</string>
+
     <!-- Dashboard -->
-    <string name="my_accounts">My Accounts</string>
-    <string name="total_balance">Total Balance</string>
-    <string name="accounts">Accounts</string>
-    
+    <string name="my_accounts">Mes Comptes</string>
+    <string name="total_balance">Solde Total</string>
+    <string name="accounts">Comptes</string>
+    <string name="welcome_back">Bienvenue</string>
+
     <!-- Transactions -->
     <string name="transactions">Transactions</string>
-    <string name="recent_transactions">Recent Transactions</string>
-    <string name="transaction_history">Transaction History</string>
-    
+    <string name="recent_transactions">Transactions Récentes</string>
+    <string name="transaction_history">Historique des Transactions</string>
+    <string name="income">Revenus</string>
+    <string name="expense">Dépenses</string>
+
+    <!-- Cards -->
+    <string name="my_cards">Mes Cartes</string>
+    <string name="add_card">Ajouter une Carte</string>
+    <string name="card_management">Gestion des Cartes</string>
+
+    <!-- Transfer -->
+    <string name="send_money">Envoyer de l\'argent</string>
+    <string name="request_money">Demander de l\'argent</string>
+    <string name="transfer">Transfert</string>
+
+    <!-- Contacts -->
+    <string name="contacts">Contacts</string>
+    <string name="add_contact">Ajouter un Contact</string>
+    <string name="recent_contacts">Contacts Récents</string>
+
+    <!-- Statistics -->
+    <string name="statistics">Statistiques</string>
+    <string name="monthly_trends">Tendances Mensuelles</string>
+    <string name="spending_by_category">Dépenses par Catégorie</string>
+
+    <!-- Profile -->
+    <string name="profile">Profil</string>
+    <string name="settings">Paramètres</string>
+    <string name="edit_profile">Modifier le Profil</string>
+
     <!-- General -->
-    <string name="loading">Loading...</string>
-    <string name="error">Error</string>
-    <string name="retry">Retry</string>
-    <string name="refresh">Refresh</string>
-    <string name="no_data">No data available</string>
+    <string name="loading">Chargement...</string>
+    <string name="error">Erreur</string>
+    <string name="retry">Réessayer</string>
+    <string name="refresh">Actualiser</string>
+    <string name="no_data">Aucune donnée disponible</string>
+    <string name="cancel">Annuler</string>
+    <string name="confirm">Confirmer</string>
+    <string name="delete">Supprimer</string>
+    <string name="save">Enregistrer</string>
+
+    <!-- Biometric -->
+    <string name="biometric_title">Déverrouiller Aureus Banking</string>
+    <string name="biometric_subtitle">Utilisez votre empreinte digitale pour continuer</string>
+    <string name="biometric_description">Touchez le capteur pour vérifier votre identité</string>
+    <string name="biometric_not_available">L\'authentification biométrique n\'est pas disponible</string>
+    <string name="biometric_not_enrolled">Aucune biométrique configurée sur cet appareil</string>
+    <string name="biometric_error">Erreur d\'authentification biométrique</string>
+
+    <!-- Offline -->
+    <string name="offline_mode">Mode Hors Ligne</string>
+    <string name="offline_message">Vous êtes hors ligne. Certaines fonctionnalités peuvent être limitées.</string>
+    <string name="connecting">Connexion...</string>
+    <string name="syncing">Synchronisation...</string>
     
     <!-- Notifications -->
-    <string name="notification_transaction_title">New Transaction</string>
-    <string name="notification_low_balance_title">Low Balance Alert</string>
+    <string name="notification_transaction_title">Nouvelle Transaction</string>
+    <string name="notification_low_balance_title">Alerte Solde Faible</string>
     <string name="notification_info_title">Information</string>
+
+    <!-- Language Selection -->
+    <string name="language">Langue</string>
+    <string name="language_changed">Langue changée avec succès</string>
+
+    <!-- Theme -->
+    <string name="theme">Thème</string>
+    <string name="light_mode">Mode Clair</string>
+    <string name="dark_mode">Mode Sombre</string>
+
+    <!-- Card Details -->
+    <string name="card_number">Numéro de Carte</string>
+    <string name="card_holder">Titulaire</string>
+    <string name="expiry_date">Date d\'Expiration</string>
+    <string name="cvv">CVV</string>
+
+    <!-- Messages -->
+    <string name="success">Succès</string>
+    <string name="failed">Échec</string>
+    <string name="pending">En attente</string>
+
+    <!-- Error Messages -->
+    <string name="error_user_not_logged_in">Veuillez vous connecter pour continuer</string>
+    <string name="error_loading_data">Erreur lors du chargement des données</string>
+    <string name="error_network">Erreur réseau. Vérifiez votre connexion.</string>
+    <string name="error_unknown">Une erreur inattendue est survenue</string>
+
+    <!-- Empty States -->
+    <string name="empty_contacts">Aucun contact</string>
+    <string name="empty_transactions">Aucune transaction</string>
+    <string name="empty_cards">Aucune carte</string>
+    <string name="add_first_contact">Ajouter votre premier contact</string>
+    <string name="add_first_card">Ajouter votre première carte</string>
+
+    <!-- Success Messages -->
+    <string name="success_profile_updated">Profil mis à jour avec succès</string>
+    <string name="success_settings_updated">Paramètres mis à jour</string>
+    <string name="success_card_added">Carte ajoutée avec succès</string>
+    <string name="success_contact_added">Contact ajouté</string>
+
+    <!-- PIN -->
+    <string name="pin_required">Le code PIN est requis</string>
+    <string name="pin_incorrect">Code PIN incorrect</string>
+    <string name="pin_setup_success">Code PIN configuré avec succès</string>
+    <string name="pin_lockout_title">Trop de tentatives</string>
+    <string name="pin_lockout_message">Votre compte est temporairement verrouillé pour des raisons de sécurité.</string>
 
     <!-- Google Sign-In - Remplacer par votre propre ID client Web depuis Firebase Console -->
     <string name="default_web_client_id">437186810132-mnnu9vei8sf7jivuuh8t6o9b71ldinal.apps.googleusercontent.com</string>

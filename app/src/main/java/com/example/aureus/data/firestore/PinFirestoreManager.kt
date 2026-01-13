@@ -2,9 +2,11 @@ package com.example.aureus.data.firestore
 
 import android.util.Log
 import com.example.aureus.domain.model.Resource
+import com.example.aureus.security.EncryptionService
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.Timestamp
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -15,57 +17,63 @@ import javax.inject.Singleton
 @Singleton
 class PinFirestoreManager @Inject constructor(
     private val firestore: FirebaseFirestore,
-    private val auth: FirebaseAuth
+    private val auth: FirebaseAuth,
+    private val encryptionService: EncryptionService
 ) {
 
     companion object {
         private const val USERS_COLLECTION = "users"
         private const val PIN_FIELD = "securityPin"
-        private const val PIN_SALT = "aureus_bank_salt_2024"  // Pour le hachage
-        private const val PIN_CREATED_AT = "pinCreatedAt"
+        private const val PIN_SALT_FIELD = "securityPinSalt"
+        private const val PIN_HASHED_FIELD = "pinHashed"
+        private const val PIN_UPDATED_AT = "pinUpdatedAt"
     }
 
     /**
-     * Sauvegarder le PIN dans Firestore (hashé pour la sécurité)
+     * ✅ PHASE 1 CORRECTION: Sauvegarder le PIN avec SALT unique par utilisateur
      */
     suspend fun savePin(pin: String): Resource<Unit> {
         val user = auth.currentUser
             ?: return Resource.Error("Utilisateur non connecté")
 
         return try {
-            // Hasher le PIN avant stockage (sécurité)
-            val hashedPin = hashPin(pin)
-            val timestamp = System.currentTimeMillis()
+            // Générer salt unique pour cet utilisateur
+            val pinSalt = java.util.UUID.randomUUID().toString()
 
-            // Créer/mettre à jour le document utilisateur avec le PIN
+            // Hasher PIN avec SALT
+            val hashedPin = encryptionService.hashPin(pin + pinSalt)
+            val timestamp = Timestamp.now()
+
             val userDoc = firestore.collection(USERS_COLLECTION).document(user.uid)
-
-            // Vérifier si le document existe
             val snapshot = userDoc.get().await()
 
             if (snapshot.exists()) {
-                // Mettre à jour le PIN
                 userDoc.update(
                     mapOf(
                         PIN_FIELD to hashedPin,
-                        PIN_CREATED_AT to timestamp
+                        PIN_SALT_FIELD to pinSalt,  // ✅ NOUVEAU!
+                        PIN_HASHED_FIELD to true,
+                        PIN_UPDATED_AT to timestamp,
+                        "pinConfigured" to true
                     )
                 ).await()
             } else {
-                // Créer nouveau document utilisateur avec PIN
                 userDoc.set(
                     mapOf(
                         "uid" to user.uid,
                         "email" to (user.email ?: ""),
                         PIN_FIELD to hashedPin,
-                        PIN_CREATED_AT to timestamp,
+                        PIN_SALT_FIELD to pinSalt,  // ✅ NOUVEAU!
+                        PIN_HASHED_FIELD to true,
+                        PIN_UPDATED_AT to timestamp,
+                        "pinConfigured" to true,
                         "createdAt" to timestamp,
                         "updatedAt" to timestamp
                     )
                 ).await()
             }
 
-            Log.d("PinFirestoreManager", "PIN sauvegardé avec succès pour user: ${user.uid}")
+            Log.d("PinFirestoreManager", "PIN hashé avec SALT sauvegardé pour user: ${user.uid}")
             Resource.Success(Unit)
         } catch (e: Exception) {
             Log.e("PinFirestoreManager", "Erreur sauvegarde PIN", e)
@@ -93,7 +101,7 @@ class PinFirestoreManager @Inject constructor(
     }
 
     /**
-     * Vérifier le PIN (pour authentification)
+     * ✅ PHASE 1 CORRECTION: Vérifier le PIN avec SALT
      */
     suspend fun verifyPin(pin: String): Boolean {
         val user = auth.currentUser ?: return false
@@ -109,8 +117,21 @@ class PinFirestoreManager @Inject constructor(
             }
 
             val storedHashedPin = snapshot.getString(PIN_FIELD)
-            val inputHashedPin = hashPin(pin)
+            val pinSalt = snapshot.getString(PIN_SALT_FIELD)  // ✅ NOUVEAU!
 
+            if (pinSalt == null) {
+                // PIN ancien sans salt - migration automatique
+                val inputHashedPin = encryptionService.hashPin(pin)
+                val match = storedHashedPin == inputHashedPin
+                if (match) {
+                    // Migrer automatiquement avec salt
+                    savePin(pin)
+                }
+                return match
+            }
+
+            // ✅ Utiliser SALT pour hashage
+            val inputHashedPin = encryptionService.hashPin(pin + pinSalt)
             storedHashedPin == inputHashedPin
         } catch (e: Exception) {
             Log.e("PinFirestoreManager", "Erreur vérification PIN", e)
@@ -123,22 +144,6 @@ class PinFirestoreManager @Inject constructor(
      */
     suspend fun updatePin(newPin: String): Resource<Unit> {
         return savePin(newPin)  // Réutiliser la même logique de sauvegarde
-    }
-
-    /**
-     * Hasher le PIN (SHA-256 + salt)
-     */
-    private fun hashPin(pin: String): String {
-        return try {
-            val saltedPin = pin + PIN_SALT
-            val bytes = saltedPin.toByteArray()
-            val digest = java.security.MessageDigest.getInstance("SHA-256").digest(bytes)
-            digest.joinToString("") { "%02x".format(it) }
-        } catch (e: Exception) {
-            Log.e("PinFirestoreManager", "Erreur hash PIN", e)
-            // Fallback si SHA-256 n'est pas disponible
-            pin.hashCode().toString()
-        }
     }
 
     /**

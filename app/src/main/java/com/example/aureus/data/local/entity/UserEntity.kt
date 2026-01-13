@@ -15,5 +15,9 @@ data class UserEntity(
     val lastName: String,
     val phone: String?,
     val createdAt: String,
-    val updatedAt: String
+    val updatedAt: String,
+    val profileImage: String? = null,
+    val lastSyncedAt: Long = System.currentTimeMillis(),
+    @androidx.room.ColumnInfo(name = "is_synced")
+    val isSynced: Boolean = false
 )

@@ -9,15 +9,18 @@
 
     <application
         android:name=".MyBankApplication"
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Aureus"
-        android:usesCleartextTraffic="true"
+        android:theme="@style/Theme.Aureus.Starting"
+        android:hardwareAccelerated="true"
+        android:usesCleartextTraffic="false"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:largeHeap="true"
         tools:targetApi="31">
         
         <activity
@@ -28,11 +31,68 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- Phase 4: Deep Links pour navigation depuis notifications -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="aureus"
+                    android:host="home" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="aureus"
+                    android:host="dashboard" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="aureus"
+                    android:host="transactions" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="aureus"
+                    android:host="cards" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="aureus"
+                    android:host="notifications" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="aureus"
+                    android:host="send_money" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="aureus"
+                    android:host="request_money" />
+            </intent-filter>
         </activity>
 
         <!-- Firebase Messaging Service -->
         <service
-            android:name=".notification.MyFirebaseMessagingService"
+            android:name=".notification.FirebaseMessagingService"
             android:exported="false">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
@@ -43,6 +103,19 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="@string/default_notification_channel_id" />
+
+        <!-- Firebase Performance Monitoring - PHASE 11: Analytics & Monitoring -->
+        <meta-data
+            android:name="firebase_performance_enabled"
+            android:value="true" />
+
+        <!-- Firebase Crashlytics - PHASE 11: Analytics & Monitoring -->
+        <meta-data
+            android:name="firebase_crashlytics_enabled"
+            android:value="true" />
+
+        <!-- Phase 7: Offline-First - WorkManager Configuration -->
+        <!-- WorkManager is configured with Hilt in MyBankApplication -->
     </application>
 
 </manifest>

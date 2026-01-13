@@ -41,9 +41,15 @@ fun HomeScreen(
     onNavigateToTransactions: () -> Unit = {},
     onNavigateToSendMoney: () -> Unit = {},
     onNavigateToRequestMoney: () -> Unit = {},
-    onNavigateToProfile: () -> Unit = {}
+    onNavigateToProfile: () -> Unit = {},
+    onNavigateToNotifications: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
+    // Phase 15: Performance Optimization - Remember expensive computations
+    val userName = remember { viewModel.getCurrentUserName() }
+    val defaultCard = remember(uiState.defaultCard) { uiState.defaultCard }
+    val recentTransactions = remember(uiState.recentTransactions) { uiState.recentTransactions }
 
     if (uiState.isLoading) {
         Box(
@@ -57,27 +63,26 @@ fun HomeScreen(
         return
     }
 
-    val userName = viewModel.getCurrentUserName()
-    val defaultCard = uiState.defaultCard
-    val recentTransactions = uiState.recentTransactions
-
+    // Phase 15: Performance Optimization - Optimized LazyColumn with keys
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .background(NeutralLightGray),
-        contentPadding = PaddingValues(bottom = 80.dp) // Extra padding for bottom nav
+        contentPadding = PaddingValues(bottom = 80.dp), // Extra padding for bottom nav
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         // Header
-        item {
+        item(key = "header") {
             HomeHeaderDemo(
                 userName = userName,
-                onProfileClick = onNavigateToProfile
+                onProfileClick = onNavigateToProfile,
+                onNotificationsClick = onNavigateToNotifications,
+                viewModel = viewModel
             )
         }
 
         // Balance Card
-        item {
-            Spacer(modifier = Modifier.height(24.dp))
+        item(key = "balance_card") {
             DynamicBalanceCard(
                 balance = uiState.totalBalance,
                 defaultCard = defaultCard,
@@ -86,8 +91,7 @@ fun HomeScreen(
         }
 
         // Quick Actions
-        item {
-            Spacer(modifier = Modifier.height(24.dp))
+        item(key = "quick_actions") {
             QuickActionsRow(
                 onNavigateToSendMoney = onNavigateToSendMoney,
                 onNavigateToRequestMoney = onNavigateToRequestMoney
@@ -95,14 +99,12 @@ fun HomeScreen(
         }
 
         // Mini Chart
-        item {
-            Spacer(modifier = Modifier.height(24.dp))
+        item(key = "mini_chart") {
             MiniChartCard(onClick = onNavigateToStatistics)
         }
 
-        // Recent Transactions
-        item {
-            Spacer(modifier = Modifier.height(24.dp))
+        // Recent Transactions Header
+        item(key = "transactions_header") {
             Text(
                 text = "Recent Transactions",
                 fontSize = 18.sp,
@@ -110,17 +112,25 @@ fun HomeScreen(
                 color = PrimaryNavyBlue,
                 modifier = Modifier.padding(horizontal = 20.dp)
             )
-            Spacer(modifier = Modifier.height(12.dp))
         }
 
-        items(recentTransactions) { transaction ->
+        // Phase 15: Performance Optimization - Items with keys for stable caching
+        items(
+            items = recentTransactions,
+            key = { transaction ->
+                // Use transactionId for stable key, fallback to random for stability
+                (transaction as? Map<String, Any>)?.get("transactionId")?.toString()
+                    ?: transaction.hashCode().toString()
+            }
+        ) { transaction ->
             DynamicTransactionItem(
                 transaction = transaction as Map<String, Any>,
                 onClick = { /* Navigate to transaction detail */ }
             )
         }
 
-        item {
+        // View All Button
+        item(key = "view_all_button") {
             TextButton(
                 onClick = onNavigateToTransactions,
                 modifier = Modifier
@@ -192,8 +202,12 @@ private fun HomeHeader(
 @Composable
 private fun HomeHeaderDemo(
     userName: String,
-    onProfileClick: () -> Unit
+    onProfileClick: () -> Unit,
+    onNotificationsClick: () -> Unit = {},
+    viewModel: HomeViewModel
 ) {
+    val unreadCount by viewModel.unreadCount.collectAsState(initial = 0)
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -234,12 +248,29 @@ private fun HomeHeaderDemo(
         }
 
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = { /* Notifications */ }) {
-                Icon(
-                    imageVector = Icons.Default.Notifications,
-                    contentDescription = "Notifications",
-                    tint = PrimaryNavyBlue
-                )
+            Box(modifier = Modifier.size(40.dp)) {
+                IconButton(onClick = onNotificationsClick) {
+                    Icon(
+                        imageVector = Icons.Default.Notifications,
+                        contentDescription = "Notifications",
+                        tint = PrimaryNavyBlue
+                    )
+                }
+                if (unreadCount > 0) {
+                    Badge(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .offset(x = (-4).dp, y = 4.dp),
+                        containerColor = SemanticRed
+                    ) {
+                        Text(
+                            text = if (unreadCount > 99) "99+" else unreadCount.toString(),
+                            fontSize = 10.sp,
+                            color = Color.White,
+                            modifier = Modifier.padding(4.dp)
+                        )
+                    }
+                }
             }
         }
     }
@@ -473,79 +504,15 @@ private fun DynamicTransactionItem(
     }
 }
 
-@Composable
-private fun HomeHeader(
-    user: com.example.aureus.data.User,
-    onProfileClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(20.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(SecondaryGold.copy(alpha = 0.2f))
-                    .clickable(onClick = onProfileClick),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "${user.firstName.first()}${user.lastName.first()}",
-                    color = SecondaryGold,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp
-                )
-            }
-            Spacer(modifier = Modifier.width(12.dp))
-            Column {
-                Text(
-                    text = "Welcome back,",
-                    fontSize = 14.sp,
-                    color = NeutralMediumGray
-                )
-                Text(
-                    text = user.firstName,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = PrimaryNavyBlue
-                )
-            }
-        }
 
-        IconButton(onClick = { /* Notifications */ }) {
-            Icon(
-                imageVector = Icons.Default.Notifications,
-                contentDescription = "Notifications",
-                tint = PrimaryNavyBlue
-            )
-        }
-    }
-}
-
-// ==================== LEGACY STATIC COMPONENTS (OBSOLETE - Kept for reference) ====================
-// NOTE: These components use StaticData and are no longer used in Firebase integration
-// Use DynamicBalanceCard and DynamicTransactionItem instead
-
-/*
-@Composable
-private fun BankCardDisplay(
-    card: BankCard,
-    onClick: () -> Unit
-) {
-    // Obsolete - use DynamicBalanceCard instead
-}
-*/
 
 @Composable
 private fun QuickActionsRow(
     onNavigateToSendMoney: () -> Unit = {},
     onNavigateToRequestMoney: () -> Unit = {}
 ) {
+    var showMoreMenu by remember { mutableStateOf(false) }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -567,11 +534,42 @@ private fun QuickActionsRow(
             label = "Scan",
             onClick = { /* Scan QR - Future feature */ }
         )
-        QuickActionButton(
-            icon = Icons.Default.MoreHoriz,
-            label = "More",
-            onClick = { /* More options - Future feature */ }
-        )
+
+        // More button with DropdownMenu
+        Box {
+            QuickActionButton(
+                icon = Icons.Default.MoreHoriz,
+                label = "More",
+                onClick = { showMoreMenu = true }
+            )
+
+            DropdownMenu(
+                expanded = showMoreMenu,
+                onDismissRequest = { showMoreMenu = false }
+            ) {
+                DropdownMenuItem(
+                    text = { Text("Settings") },
+                    leadingIcon = { Icon(Icons.Default.Settings, null) },
+                    onClick = {
+                        showMoreMenu = false
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text("Help") },
+                    leadingIcon = { Icon(Icons.Default.Help, null) },
+                    onClick = {
+                        showMoreMenu = false
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text("About") },
+                    leadingIcon = { Icon(Icons.Default.Info, null) },
+                    onClick = {
+                        showMoreMenu = false
+                    }
+                )
+            }
+        }
     }
 }
 

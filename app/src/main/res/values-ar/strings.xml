@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">أوريوس</string>
+    <string name="default_notification_channel_id">aureus_notifications</string>
+    
+    <!-- Authentication -->
+    <string name="login">تسجيل الدخول</string>
+    <string name="register">إنشاء حساب</string>
+    <string name="email">البريد الإلكتروني</string>
+    <string name="password">كلمة المرور</string>
+    <string name="first_name">الاسم الأول</string>
+    <string name="last_name">اسم العائلة</string>
+    <string name="phone">رقم الهاتف</string>
+    <string name="logout">تسجيل الخروج</string>
+    
+    <!-- Dashboard -->
+    <string name="my_accounts">حساباتي</string>
+    <string name="total_balance">الرصيد الإجمالي</string>
+    <string name="accounts">الحسابات</string>
+    <string name="welcome_back">مرحبًا بعودتك</string>
+    
+    <!-- Transactions -->
+    <string name="transactions">المعاملات</string>
+    <string name="recent_transactions">المعاملات الأخيرة</string>
+    <string name="transaction_history">سجل المعاملات</string>
+    <string name="income">الدخل</string>
+    <string name="expense">المصروفات</string>
+    
+    <!-- Cards -->
+    <string name="my_cards">بطاقاتي</string>
+    <string name="add_card">إضافة بطاقة جديدة</string>
+    <string name="card_management">إدارة البطاقات</string>
+    
+    <!-- Transfer -->
+    <string name="send_money">إرسال الأموال</string>
+    <string name="request_money">طلب الأموال</string>
+    <string name="transfer">تحويل</string>
+    
+    <!-- Contacts -->
+    <string name="contacts">جهات الاتصال</string>
+    <string name="add_contact">إضافة جهة اتصال</string>
+    <string name="recent_contacts">جهات الاتصال الأخيرة</string>
+    
+    <!-- Statistics -->
+    <string name="statistics">الإحصائيات</string>
+    <string name="monthly_trends">الاتجاهات الشهرية</string>
+    <string name="spending_by_category">المصروفات حسب الفئة</string>
+    
+    <!-- Profile -->
+    <string name="profile">الملف الشخصي</string>
+    <string name="settings">الإعدادات</string>
+    <string name="edit_profile">تعديل الملف الشخصي</string>
+    
+    <!-- General -->
+    <string name="loading">جاري التحميل...</string>
+    <string name="error">خطأ</string>
+    <string name="retry">إعادة المحاولة</string>
+    <string name="refresh">تحديث</string>
+    <string name="no_data">لا توجد بيانات متاحة</string>
+    <string name="cancel">إلغاء</string>
+    <string name="confirm">تأكيد</string>
+    <string name="delete">حذف</string>
+    <string name="save">حفظ</string>
+    
+    <!-- Biometric -->
+    <string name="biometric_title">إلغاء قفل أوريوس بنك</string>
+    <string name="biometric_subtitle">استخدم بصمة إصبعك للمتابعة</string>
+    <string name="biometric_description">المس على المستشعر للتحقق من هويتك</string>
+    
+    <!-- Offline -->
+    <string name="offline_mode">وضع عدم الاتصال</string>
+    <string name="offline_message">أنت غير متصل. بعض الميزات قد تكون محدودة.</string>
+    <string name="connecting">جاري الاتصال...</string>
+    <string name="syncing">جاري المزامنة...</string>
+    
+    <!-- Notifications -->
+    <string name="notification_transaction_title">معاملة جديدة</string>
+    <string name="notification_low_balance_title">تنبيه انخفاض الرصيد</string>
+    <string name="notification_info_title">معلومات</string>
+    
+    <!-- Language Selection -->
+    <string name="language">اللغة</string>
+    <string name="language_changed">تم تغيير اللغة بنجاح</string>
+    
+    <!-- Theme -->
+    <string name="theme">المظهر</string>
+    <string name="light_mode">الوضع الفاتح</string>
+    <string name="dark_mode">الوضع المظلم</string>
+    
+    <!-- Card Details -->
+    <string name="card_number">رقم البطاقة</string>
+    <string name="card_holder">حامل البطاقة</string>
+    <string name="expiry_date">تاريخ الانتهاء</string>
+    <string name="cvv">رمز الأمان</string>
+    
+    <!-- Messages -->
+    <string name="success">نجاح</string>
+    <string name="failed">فشل</string>
+    <string name="pending">قيد الانتظار</string>
+
+    <!-- Error Messages -->
+    <string name="error_user_not_logged_in">الرجاء تسجيل الدخول للمتابعة</string>
+    <string name="error_loading_data">خطأ في تحميل البيانات</string>
+    <string name="error_network">خطأ في الشبكة. يرجى التحقق من اتصالك.</string>
+    <string name="error_unknown">حدث خطأ غير متوقع</string>
+
+    <!-- Empty States -->
+    <string name="empty_contacts">لا توجد جهات اتصال</string>
+    <string name="empty_transactions">لا توجد معاملات</string>
+    <string name="empty_cards">لا توجد بطاقات</string>
+    <string name="add_first_contact">أضف جهة اتصال أولى</string>
+    <string name="add_first_card">أضف بطاقتك الأولى</string>
+
+    <!-- Success Messages -->
+    <string name="success_profile_updated">تم تحديث الملف الشخصي بنجاح</string>
+    <string name="success_settings_updated">تم تحديث الإعدادات</string>
+    <string name="success_card_added">تمت إضافة البطاقة بنجاح</string>
+    <string name="success_contact_added">تمت إضافة جهة الاتصال</string>
+
+    <!-- Biometric -->
+    <string name="biometric_not_available">المصادقة البيومترية غير متوفرة</string>
+    <string name="biometric_not_enrolled">لم يتم تكوين مصادقة بيومترية على هذا الجهاز</string>
+    <string name="biometric_error">خطأ في المصادقة البيومترية</string>
+
+    <!-- PIN -->
+    <string name="pin_required">رمز PIN مطلوب</string>
+    <string name="pin_incorrect">رمز PIN غير صحيح</string>
+    <string name="pin_setup_success">تم تكوين رمز PIN بنجاح</string>
+    <string name="pin_lockout_title">محاولات كثيرة جداً</string>
+    <string name="pin_lockout_message">حسابك مؤقتاً مغلق لأسباب أمنية.</string>
+
+    <!-- Google Sign-In -->
+    <string name="default_web_client_id">437186810132-mnnu9vei8sf7jivuuh8t6o9b71ldinal.apps.googleusercontent.com</string>
+</resources>
