@@ -1,15 +1,20 @@
 package com.example.aureus.data.repository
 
 import android.util.Log
+import com.example.aureus.data.local.dao.StatisticsCacheDao
+import com.example.aureus.data.local.entity.StatisticsCacheEntity
 import com.example.aureus.domain.model.*
 import com.example.aureus.domain.repository.StatisticRepository
 import com.example.aureus.domain.repository.TransactionRepositoryFirebase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
@@ -18,11 +23,13 @@ import javax.inject.Singleton
 /**
  * Statistic Repository Implementation
  * Utilise TransactionRepositoryFirebase pour calculer les statistiques
+ * Phase 3, 5, 6: Added performance optimizations and caching
  */
 @Singleton
 class StatisticRepositoryImpl @Inject constructor(
     private val transactionRepository: TransactionRepositoryFirebase,
-    private val firebaseDataManager: com.example.aureus.data.remote.firebase.FirebaseDataManager
+    private val firebaseDataManager: com.example.aureus.data.remote.firebase.FirebaseDataManager,
+    private val cacheDao: StatisticsCacheDao
 ) : StatisticRepository {
 
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
@@ -660,4 +667,153 @@ class StatisticRepositoryImpl @Inject constructor(
             null
         }
     }
+
+    // ==================== CACHE MANAGEMENT (Phase 5) ====================
+
+    override suspend fun <T> getCachedStatistic(
+        userId: String,
+        statType: String,
+        period: String,
+        clazz: Class<T>
+    ): T? {
+        return try {
+            withContext(Dispatchers.IO) {
+                val cacheKey = StatisticsCacheEntity.generateCacheKey(userId, statType, period)
+                val cacheEntry = cacheDao.getValidCache(cacheKey)
+                cacheEntry?.parseData()
+            }
+        } catch (e: Exception) {
+            Log.e("StatisticRepositoryImpl", "Failed to get cached statistic: ${e.message}", e)
+            null
+        }
+    }
+
+    override suspend fun <T> cacheStatistic(
+        userId: String,
+        statType: String,
+        data: T,
+        period: String,
+        ttlMs: Long
+    ): Boolean {
+        return try {
+            withContext(Dispatchers.IO) {
+                val cacheEntry = StatisticsCacheEntity.fromData(
+                    userId = userId,
+                    statType = statType,
+                    data = data,
+                    period = period,
+                    ttlMs = ttlMs
+                )
+                cacheDao.upsertWithCleanup(cacheEntry)
+                true
+            }
+        } catch (e: Exception) {
+            Log.e("StatisticRepositoryImpl", "Failed to cache statistic: ${e.message}", e)
+            false
+        }
+    }
+
+    override suspend fun invalidateCache(userId: String, statType: String) {
+        try {
+            withContext(Dispatchers.IO) {
+                cacheDao.invalidateCachesByType(userId, statType)
+            }
+        } catch (e: Exception) {
+            Log.e("StatisticRepositoryImpl", "Failed to invalidate cache: ${e.message}", e)
+        }
+    }
+
+    override suspend fun invalidateAllCache(userId: String) {
+        try {
+            withContext(Dispatchers.IO) {
+                cacheDao.deleteAllUserCaches(userId)
+            }
+        } catch (e: Exception) {
+            Log.e("StatisticRepositoryImpl", "Failed to invalidate all cache: ${e.message}", e)
+        }
+    }
+
+    override suspend fun clearExpiredCache() {
+        try {
+            withContext(Dispatchers.IO) {
+                cacheDao.deleteExpiredCaches()
+            }
+        } catch (e: Exception) {
+            Log.e("StatisticRepositoryImpl", "Failed to clear expired cache: ${e.message}", e)
+        }
+    }
+
+    override fun <T> getCachedStatisticFlow(
+        userId: String,
+        statType: String,
+        period: String,
+        clazz: Class<T>
+    ): Flow<T?> {
+        return try {
+            val cacheKey = StatisticsCacheEntity.generateCacheKey(userId, statType, period)
+            cacheDao.getCacheByKeyFlow(cacheKey).map { cacheEntry ->
+                if (cacheEntry != null && !cacheEntry.isExpired()) {
+                    cacheEntry.parseData()
+                } else {
+                    null
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("StatisticRepositoryImpl", "Failed to get cached statistic flow: ${e.message}", e)
+            flow { emit(null) }
+        }
+    }
+
+    override suspend fun isCacheValid(
+        userId: String,
+        statType: String,
+        period: String
+    ): Boolean {
+        return try {
+            withContext(Dispatchers.IO) {
+                val cacheKey = StatisticsCacheEntity.generateCacheKey(userId, statType, period)
+                val cacheEntry = cacheDao.getValidCache(cacheKey)
+                cacheEntry != null && !cacheEntry.isExpired() && cacheEntry.isFresh
+            }
+        } catch (e: Exception) {
+            Log.e("StatisticRepositoryImpl", "Failed to check cache validity: ${e.message}", e)
+            false
+        }
+    }
+
+    override suspend fun precacheStatistics(userId: String) {
+        try {
+            withContext(Dispatchers.IO) {
+                Log.d("StatisticRepositoryImpl", "Precaching statistics for user: $userId")
+                clearExpiredCache()
+
+                val calendar = Calendar.getInstance()
+                val endTime = calendar.time
+                calendar.add(Calendar.MONTH, -6)
+                val startTime = calendar.time
+
+                // Precompute common statistics
+                val totalBalance = getTotalBalance(userId).first()
+                cacheStatistic(userId, "totalBalance", totalBalance, "default")
+
+                val totalIncome = getTotalIncome(userId, startTime, endTime).first()
+                cacheStatistic(userId, "totalIncome", totalIncome, "monthly")
+
+                val totalExpense = getTotalExpense(userId, startTime, endTime).first()
+                cacheStatistic(userId, "totalExpense", totalExpense, "monthly")
+
+                val monthlyStats = getMonthlyIncomeExpense(userId, 6).first()
+                cacheStatistic(userId, "monthlyStats", monthlyStats, "6months")
+
+                val categoryBreakdown = getCategoryBreakdown(userId, startTime, endTime).first()
+                cacheStatistic(userId, "categoryBreakdown", categoryBreakdown, "monthly")
+
+                Log.d("StatisticRepositoryImpl", "Precache completed successfully")
+            }
+        } catch (e: Exception) {
+            Log.e("StatisticRepositoryImpl", "Failed to precache statistics: ${e.message}", e)
+        }
+    }
+
+    // ==================== PERFORMANCE OPTIMIZATION (Phase 3) ====================
 }

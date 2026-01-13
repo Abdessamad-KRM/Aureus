@@ -7,6 +7,7 @@ import java.util.Date
 /**
  * Statistic Repository Interface
  * Fournit toutes les méthodes pour calculer et récupérer les statistiques
+ * Phase 3, 5, 6: Added cache methods for offline-first statistics
  */
 interface StatisticRepository {
 
@@ -202,4 +203,70 @@ interface StatisticRepository {
         startDate: Date,
         endDate: Date
     ): Resource<String>
+
+    // ==================== CACHE MANAGEMENT (Phase 5) ====================
+
+    /**
+     * Get cached statistics of a specific type
+     * Phase 5: Offline Statistics Caching
+     */
+    suspend fun <T> getCachedStatistic(
+        userId: String,
+        statType: String,
+        period: String = "default",
+        clazz: Class<T>
+    ): T?
+
+    /**
+     * Save statistics to cache
+     * Phase 5: Offline Statistics Caching
+     */
+    suspend fun <T> cacheStatistic(
+        userId: String,
+        statType: String,
+        data: T,
+        period: String = "default",
+        ttlMs: Long = 15 * 60 * 1000 // 15 minutes default
+    ): Boolean
+
+    /**
+     * Invalidate cache by type
+     * Phase 5: Cache Invalidation
+     */
+    suspend fun invalidateCache(userId: String, statType: String)
+
+    /**
+     * Invalidate all cache for a user
+     * Phase 5: Cache Invalidation
+     */
+    suspend fun invalidateAllCache(userId: String)
+
+    /**
+     * Clear expired cache entries
+     * Phase 5: Cache Cleanup
+     */
+    suspend fun clearExpiredCache()
+
+    /**
+     * Get cached statistics as Flow (for real-time updates)
+     * Phase 5: Reactive Cache
+     */
+    fun <T> getCachedStatisticFlow(
+        userId: String,
+        statType: String,
+        period: String = "default",
+        clazz: Class<T>
+    ): Flow<T?>
+
+    /**
+     * Check if cache is valid and fresh
+     * Phase 5: Cache Validation
+     */
+    suspend fun isCacheValid(userId: String, statType: String, period: String = "default"): Boolean
+
+    /**
+     * Cache precompute request flag
+     * Phase 3: Performance Optimization
+     */
+    suspend fun precacheStatistics(userId: String)
 }

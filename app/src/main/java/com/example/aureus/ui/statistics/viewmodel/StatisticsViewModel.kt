@@ -182,7 +182,24 @@ class StatisticsViewModel @Inject constructor(
     fun changePeriod(period: StatisticPeriod) {
         val userId = firebaseDataManager.currentUserId() ?: return
         _uiState.update { it.copy(selectedPeriod = period) }
-        loadStatistics(userId)
+
+        // Phase 5: Invalidate cache when period changes and reload
+        viewModelScope.launch {
+            try {
+                statisticRepository.invalidateAllCache(userId)
+                loadStatistics(userId)
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = "Failed to update period: ${e.message}") }
+            }
+        }
+    }
+
+    // Phase 5: Method to manually trigger precache
+    fun precacheStatistics() {
+        val userId = firebaseDataManager.currentUserId() ?: return
+        viewModelScope.launch {
+            statisticRepository.precacheStatistics(userId)
+        }
     }
 
     fun exportToCSV() {

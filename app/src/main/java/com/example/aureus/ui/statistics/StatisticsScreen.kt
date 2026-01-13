@@ -1,5 +1,6 @@
 package com.example.aureus.ui.statistics
 
+import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -35,6 +36,7 @@ import java.util.*
 
 /**
  * Statistics Screen - Firebase-based real-time statistics avec filtres et export
+ * Phase 6: Enhanced animations and transitions
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -159,109 +161,148 @@ fun StatisticsScreen(
                 }
             }
         } else {
+            // Phase 6: AnimatedContent for smooth transitions when data changes
+            AnimatedVisibility(
+                visible = !uiState.isLoading,
+                enter = fadeIn(tween(durationMillis = 300)) + expandVertically(tween(durationMillis = 300)),
+                exit = fadeOut(tween(durationMillis = 200)) + shrinkVertically(tween(durationMillis = 200))
+            ) {
+                val density = LocalDensity.current
+                val listState = rememberLazyListState()
 
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(NeutralLightGray)
-                .padding(padding),
-            contentPadding = PaddingValues(20.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
-        ) {
-            // Phase 15: Performance Optimization - Items with stable keys
-            item(key = "period_badge") {
-                PeriodBadge(period = uiState.selectedPeriod)
-            }
-
-            item(key = "balance_card") {
-                DynamicBalanceCard(
-                    balance = uiState.totalBalance
-                )
-            }
-
-            item(key = "spending_circle") {
-                DynamicSpendingCircleCard(
-                    percentage = uiState.spendingPercentage,
-                    income = uiState.totalIncome,
-                    expense = uiState.totalExpense,
-                    trend = uiState.spendingTrend
-                )
-            }
-
-            // Insights Section - with keys
-            if (uiState.insights.isNotEmpty()) {
-                item(key = "insights_header") {
-                    Text(
-                        text = "Insights",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = PrimaryNavyBlue
-                    )
-                }
-
-                items(
-                    items = uiState.insights,
-                    key = { insight -> "${insight.title}-${insight.type}" } // Phase 15: Stable key using composite
-                ) { insight ->
-                    InsightCard(insight = insight)
-                }
-            }
-
-            // Professional Line Chart
-            item(key = "line_chart") {
-                LineChartComponent(
-                    incomeData = uiState.monthlyStats.map { it.income },
-                    expenseData = uiState.monthlyStats.map { it.expense },
+                LazyColumn(
+                    state = listState,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .animateItemPlacement()
-                )
-            }
-
-            // Professional Pie Chart for Categories
-            if (uiState.categoryStats.isNotEmpty()) {
-                item(key = "pie_chart") {
-                    PieChartComponent(
-                        data = uiState.categoryStats.toMap(),
-                        modifier = Modifier.fillMaxWidth(),
-                        onSliceClick = { category, amount ->
-                            // Handle slice click if needed
-                        }
-                    )
-                }
-            }
-
-            // Category Statistics List Header
-            item(key = "category_stats_header") {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                        .fillMaxSize()
+                        .background(NeutralLightGray)
+                        .padding(padding),
+                    contentPadding = PaddingValues(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
-                    Text(
-                        text = "Spending by Category",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = PrimaryNavyBlue
+                // Phase 15: Performance Optimization - Items with stable keys
+                item(key = "period_badge") {
+                    PeriodBadge(period = uiState.selectedPeriod)
+                }
+
+                item(key = "balance_card") {
+                    DynamicBalanceCard(
+                        balance = uiState.totalBalance
+                    )
+                }
+
+                item(key = "spending_circle") {
+                    DynamicSpendingCircleCard(
+                        percentage = uiState.spendingPercentage,
+                        income = uiState.totalIncome,
+                        expense = uiState.totalExpense,
+                        trend = uiState.spendingTrend
+                    )
+                }
+
+                // Insights Section - with keys
+                if (uiState.insights.isNotEmpty()) {
+                    item(key = "insights_header") {
+                        Text(
+                            text = "Insights",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = PrimaryNavyBlue
+                        )
+                    }
+
+                    items(
+                        items = uiState.insights,
+                        key = { insight -> "${insight.title}-${insight.type}" } // Phase 15: Stable key using composite
+                    ) { insight ->
+                        InsightCard(insight = insight)
+                    }
+                }
+
+                // Professional Line Chart
+                item(key = "line_chart") {
+                    // Phase 6: Enhanced animation for chart
+                    val chartEnterTransition = fadeIn(tween(600, delayMillis = 100)) +
+                        slideInHorizontally(animationSpec = tween(600, easing = EaseInOutCubic), initialOffsetX = { it / 2 })
+
+                    AnimatedVisibility(
+                        visible = uiState.monthlyStats.isNotEmpty(),
+                        enter = chartEnterTransition,
+                        exit = fadeOut(tween(300))
+                    ) {
+                        LineChartComponent(
+                            incomeData = uiState.monthlyStats.map { it.income },
+                            expenseData = uiState.monthlyStats.map { it.expense },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .animateItemPlacement(
+                                    animationSpec = spring(
+                                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                                        stiffness = Spring.StiffnessLow
+                                    )
+                                )
+                        )
+                    }
+                }
+
+                // Professional Pie Chart for Categories
+                if (uiState.categoryStats.isNotEmpty()) {
+                    item(key = "pie_chart") {
+                        // Phase 6: Animated entry for pie chart
+                        val pieEnterTransition = scaleIn(
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                stiffness = Spring.StiffnessLow
+                            ),
+                            initialScale = 0.8f
+                        ) + fadeIn(tween(600, delayMillis = 200))
+
+                        AnimatedVisibility(
+                            visible = uiState.categoryStats.isNotEmpty(),
+                            enter = pieEnterTransition,
+                            exit = scaleOut() + fadeOut(tween(200))
+                        ) {
+                            PieChartComponent(
+                                data = uiState.categoryStats.toMap(),
+                                modifier = Modifier.fillMaxWidth(),
+                                onSliceClick = { category, amount ->
+                                    // Handle slice click if needed
+                                }
+                            )
+                        }
+                    }
+                }
+
+                // Category Statistics List Header
+                item(key = "category_stats_header") {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Spending by Category",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = PrimaryNavyBlue
+                        )
+                    }
+                }
+
+                // Phase 15: Performance Optimization - Category items with keys
+                items(
+                    items = uiState.categoryStats,
+                    key = { it.first }
+                ) { (category, amount) ->
+                    val percentage = if (uiState.totalExpense > 0) {
+                        (amount / uiState.totalExpense * 100).toInt()
+                    } else 0
+                    DynamicCategoryStatItem(
+                        category = category,
+                        amount = amount,
+                        percentage = percentage
                     )
                 }
             }
-
-            // Phase 15: Performance Optimization - Category items with keys
-            items(
-                items = uiState.categoryStats.entries.toList(),
-                key = { it.key }
-            ) { (category, amount) ->
-                val percentage = if (uiState.totalExpense > 0) {
-                    (amount / uiState.totalExpense * 100).toInt()
-                } else 0
-                DynamicCategoryStatItem(
-                    category = category,
-                    amount = amount,
-                    percentage = percentage
-                )
-            }
-        }
         }
     }
 }
@@ -362,6 +403,16 @@ private fun InsightCard(insight: com.example.aureus.domain.model.SpendingInsight
 
 @Composable
 private fun DynamicBalanceCard(balance: Double) {
+    // Phase 6: Animated balance counter
+    val animatedBalance by animateFloatAsState(
+        targetValue = balance.toFloat(),
+        animationSpec = tween(
+            durationMillis = 1000,
+            easing = FastOutSlowInEasing
+        ),
+        label = "balance"
+    )
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -400,13 +451,22 @@ private fun DynamicBalanceCard(balance: Double) {
                     )
                 }
 
-                Text(
-                    text = formatCurrency(balance),
-                    color = NeutralWhite,
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1
-                )
+                // Phase 6: Animated balance text
+                AnimatedContent(
+                    targetState = animatedBalance,
+                    transitionSpec = {
+                        fadeIn(tween(300)) togetherWith fadeOut(tween(300))
+                    },
+                    label = "balanceText"
+                ) { currentBalance ->
+                    Text(
+                        text = formatCurrency(currentBalance.toDouble()),
+                        color = NeutralWhite,
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1
+                    )
+                }
 
                 Text(
                     text = "Available Balance",
@@ -425,6 +485,29 @@ private fun DynamicSpendingCircleCard(
     expense: Double,
     trend: com.example.aureus.domain.model.SpendingTrend? = null
 ) {
+    // Phase 6: Animate progress indicator
+    val animatedPercentage by animateFloatAsState(
+        targetValue = percentage.toFloat(),
+        animationSpec = tween(
+            durationMillis = 1000,
+            easing = FastOutSlowInEasing
+        ),
+        label = "percentage"
+    )
+
+    // Animate income and expense values
+    val animatedIncome by animateFloatAsState(
+        targetValue = income.toFloat(),
+        animationSpec = tween(durationMillis = 800, delayMillis = 200),
+        label = "income"
+    )
+
+    val animatedExpense by animateFloatAsState(
+        targetValue = expense.toFloat(),
+        animationSpec = tween(durationMillis = 800, delayMillis = 400),
+        label = "expense"
+    )
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -447,8 +530,8 @@ private fun DynamicSpendingCircleCard(
                     fontWeight = FontWeight.SemiBold,
                     color = PrimaryNavyBlue
                 )
-                
-                // Trend Indicator
+
+                // Phase 6: Animated Trend Indicator
                 trend?.let { t ->
                     val trendIcon = when (t.trend) {
                         com.example.aureus.domain.model.TrendDirection.UP -> Icons.Default.TrendingUp
@@ -460,23 +543,29 @@ private fun DynamicSpendingCircleCard(
                         com.example.aureus.domain.model.TrendDirection.DOWN -> SemanticGreen
                         com.example.aureus.domain.model.TrendDirection.STABLE -> NeutralMediumGray
                     }
-                    
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+
+                    AnimatedVisibility(
+                        visible = trend != null,
+                        enter = scaleIn() + fadeIn(),
+                        exit = scaleOut() + fadeOut()
                     ) {
-                        Icon(
-                            imageVector = trendIcon,
-                            contentDescription = null,
-                            tint = trendColor,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Text(
-                            text = "${String.format("%.1f", t.changePercentage)}%",
-                            fontSize = 12.sp,
-                            color = trendColor,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = trendIcon,
+                                contentDescription = null,
+                                tint = trendColor,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = "${String.format("%.1f", t.changePercentage)}%",
+                                fontSize = 12.sp,
+                                color = trendColor,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
             }
@@ -487,21 +576,32 @@ private fun DynamicSpendingCircleCard(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier.size(180.dp)
             ) {
+                // Phase 6: Animated CircularProgressIndicator
                 CircularProgressIndicator(
-                    progress = { percentage / 100f },
+                    progress = { animatedPercentage / 100f },
                     modifier = Modifier.fillMaxSize(),
                     strokeWidth = 12.dp,
                     color = SecondaryGold,
-                    trackColor = NeutralLightGray
+                    trackColor = NeutralLightGray,
+                    animationSpec = ProgressIndicatorDefaults.ProgressAnimationSpec
                 )
 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = "$percentage%",
-                        fontSize = 40.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = PrimaryNavyBlue
-                    )
+                    // Phase 6: Animated percentage text
+                    AnimatedContent(
+                        targetState = animatedPercentage.toInt(),
+                        transitionSpec = {
+                            fadeIn(tween(200)) togetherWith fadeOut(tween(200))
+                        },
+                        label = "percentageText"
+                    ) { currentPercentage ->
+                        Text(
+                            text = "$currentPercentage%",
+                            fontSize = 40.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = PrimaryNavyBlue
+                        )
+                    }
                     Text(
                         text = "of income",
                         fontSize = 14.sp,
@@ -516,15 +616,16 @@ private fun DynamicSpendingCircleCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceAround
             ) {
+                // Phase 6: Animated values in legends
                 SpendingLegend(
                     color = SemanticGreen,
                     label = "Income",
-                    amount = income
+                    amount = animatedIncome.toDouble()
                 )
                 SpendingLegend(
                     color = SemanticRed,
                     label = "Expenses",
-                    amount = expense
+                    amount = animatedExpense.toDouble()
                 )
             }
         }
