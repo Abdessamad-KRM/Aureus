@@ -10,9 +10,10 @@ import com.example.aureus.domain.model.Resource
 import com.example.aureus.domain.model.StatisticPeriod
 import com.example.aureus.domain.repository.StatisticRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.async
 import java.util.Calendar
 import javax.inject.Inject
 
@@ -38,6 +39,9 @@ class StatisticsViewModel @Inject constructor(
     private val _syncStatus = MutableStateFlow<SyncStatus>(SyncStatus(false, null, 0, false))
     val syncStatus: StateFlow<SyncStatus> = _syncStatus.asStateFlow()
 
+    // ✅ CORRECTION #4: Job pour gérer et annuler les coroutines de statistiques
+    private var statisticsJobs: Job? = null
+
     init {
         // Observer le statut de sync via Pattern Observer
         viewModelScope.launch {
@@ -49,87 +53,102 @@ class StatisticsViewModel @Inject constructor(
         val userId = firebaseDataManager.currentUserId()
         if (userId != null) {
             loadStatistics(userId)
+
+            // ✅ CORRECTION #5 ALTERNATIVE: Écouter directement les transactions
+            viewModelScope.launch {
+                firebaseDataManager.getUserTransactions(userId, 1000).collect { transactions ->
+                    // Les FLOWs de statistiques sont déjà en écoute, donc ils se mettront à jour automatiquement
+                    // Juste vérifier si isLoading doit être false
+                    if (_uiState.value.isLoading) {
+                        _uiState.update { it.copy(isLoading = false) }
+                    }
+                }
+            }
         } else {
             _uiState.update { it.copy(isLoading = false, error = "User not logged in") }
         }
     }
 
     private fun loadStatistics(userId: String) {
+        // ✅ CORRECTION #4: Annuler les anciens coroutines avant de créer les nouveaux
+        statisticsJobs?.cancel(CancellationException("Cancelling previous statistics observers"))
         _uiState.update { it.copy(isLoading = true) }
 
-        viewModelScope.launch {
-            // Charger le solde total en priorité (blocking) - Critical for UI
-            val totalBalanceAsync = async {
-                statisticRepository.getTotalBalance(userId).first()
+        // ✅ CORRECTION #4: Créer un nouveau Job group
+        statisticsJobs = viewModelScope.launch {
+            val calendar = Calendar.getInstance()
+            val endTime = calendar.time
+            calendar.add(Calendar.MONTH, -6)
+            val startTime = calendar.time
+
+            // ✅ CORRECTION #1: totalBalance avec .collect()
+            launch {
+                statisticRepository.getTotalBalance(userId).collect { balance ->
+                    _uiState.update { it.copy(totalBalance = balance) }
+                }
             }
-            _uiState.value = _uiState.value.copy(
-                totalBalance = totalBalanceAsync.await()
-            )
 
-            // Charger les autres stats en parallèle (non-blocking) - Performance optimization
-            async {
-                val calendar = Calendar.getInstance()
-                val endTime = calendar.time
-                calendar.add(Calendar.MONTH, -6)
-                val startTime = calendar.time
+            // ✅ CORRECTION #2: totalIncome avec .collect()
+            launch {
+                statisticRepository.getTotalIncome(userId, startTime, endTime).collect { income ->
+                    _uiState.update { it.copy(totalIncome = income) }
+                }
+            }
 
-                // Revenus et dépenses totaux (en parallèle)
-                val incomeAsync = async { statisticRepository.getTotalIncome(userId, startTime, endTime).first() }
-                val expenseAsync = async { statisticRepository.getTotalExpense(userId, startTime, endTime).first() }
+            // ✅ CORRECTION #3: totalExpense avec .collect()
+            launch {
+                statisticRepository.getTotalExpense(userId, startTime, endTime).collect { expense ->
+                    _uiState.update { it.copy(totalExpense = expense) }
+                }
+            }
 
-                _uiState.value = _uiState.value.copy(
-                    totalIncome = incomeAsync.await(),
-                    totalExpense = expenseAsync.await()
-                )
+            // Pourcentage de dépenses
+            launch {
+                statisticRepository.getSpendingPercentage(userId, startTime, endTime).collect { percentage ->
+                    _uiState.update { it.copy(spendingPercentage = percentage) }
+                }
+            }
 
-                // Pourcentage de dépenses
-                launch {
-                    statisticRepository.getSpendingPercentage(userId, startTime, endTime).collect { percentage ->
-                        _uiState.update { it.copy(spendingPercentage = percentage) }
+            // Statistiques par catégorie
+            launch {
+                statisticRepository.getCategoryBreakdown(userId, startTime, endTime).collect { categories ->
+                    _uiState.update { it.copy(categoryStats = categories.map { it.category to it.amount }) }
+                }
+            }
+
+            // Statistiques mensuelles
+            launch {
+                statisticRepository.getMonthlyIncomeExpense(userId, 6).collect { monthlyStats ->
+                    val monthlyStatsList = monthlyStats.map { stat ->
+                        MonthlyStatData(
+                            month = monthToName(stat.month),
+                            income = stat.income,
+                            expense = stat.expense,
+                            year = stat.year,
+                            monthIndex = stat.month
+                        )
+                    }
+                    _uiState.update {
+                        it.copy(
+                            monthlyStats = monthlyStatsList,
+                            isLoading = false,
+                            error = null
+                        )
                     }
                 }
+            }
 
-                // Statistiques par catégorie
-                launch {
-                    statisticRepository.getCategoryBreakdown(userId, startTime, endTime).collect { categories ->
-                        _uiState.update { it.copy(categoryStats = categories.map { it.category to it.amount }) }
-                    }
+            // Tendances de dépenses
+            launch {
+                statisticRepository.getSpendingTrends(userId, StatisticPeriod.MONTHLY).collect { trend ->
+                    _uiState.update { it.copy(spendingTrend = trend) }
                 }
+            }
 
-                // Statistiques mensuelles
-                launch {
-                    statisticRepository.getMonthlyIncomeExpense(userId, 6).collect { monthlyStats ->
-                        val monthlyStatsList = monthlyStats.map { stat ->
-                            MonthlyStatData(
-                                month = monthToName(stat.month),
-                                income = stat.income,
-                                expense = stat.expense,
-                                year = stat.year,
-                                monthIndex = stat.month
-                            )
-                        }
-                        _uiState.update {
-                            it.copy(
-                                monthlyStats = monthlyStatsList,
-                                isLoading = false,
-                                error = null
-                            )
-                        }
-                    }
-                }
-
-                // Tendances de dépenses
-                launch {
-                    statisticRepository.getSpendingTrends(userId, StatisticPeriod.MONTHLY).collect { trend ->
-                        _uiState.update { it.copy(spendingTrend = trend) }
-                    }
-                }
-
-                // Insights
-                launch {
-                    statisticRepository.getSpendingInsights(userId, StatisticPeriod.MONTHLY).collect { insights ->
-                        _uiState.update { it.copy(insights = insights) }
-                    }
+            // Insights
+            launch {
+                statisticRepository.getSpendingInsights(userId, StatisticPeriod.MONTHLY).collect { insights ->
+                    _uiState.update { it.copy(insights = insights) }
                 }
             }
         }
@@ -137,22 +156,25 @@ class StatisticsViewModel @Inject constructor(
 
     fun refreshStatistics() {
         val userId = firebaseDataManager.currentUserId() ?: return
-        
-        // Try to sync first if online (Phase 7)
+
         viewModelScope.launch {
+            // ✅ CORRECTION #6: Juste vérifier l'état de sync, pas besoin de recharger toute la logique
+            // Les FLOWs sont déjà en écoute, donc les stats se mettront à jour automatiquement
             if (offlineSyncManager.getSyncStatus().isOnline) {
                 val syncResult = offlineSyncManager.syncNow()
                 when (syncResult) {
                     is com.example.aureus.data.offline.SyncResult.Success -> {
-                        loadStatistics(userId)
+                        // Les FLOWs se chargeront automatiquement depuis Firestore
+                        // Pas besoin de rappeler loadStatistics()
+                        _uiState.update { it.copy(isOfflineMode = false) }
                     }
                     is com.example.aureus.data.offline.SyncResult.Error -> {
-                        // Sync failed, load anyway from cache
-                        loadStatistics(userId)
+                        // Sync failed, les FLOWs chargeront depuis le cache
+                        _uiState.update { it.copy(isOfflineMode = true) }
                     }
                 }
             } else {
-                loadStatistics(userId)
+                _uiState.update { it.copy(isOfflineMode = true) }
             }
         }
     }
@@ -206,6 +228,12 @@ class StatisticsViewModel @Inject constructor(
     private fun monthToName(month: Int): String {
         val months = arrayOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
         return if (month in 0..11) months[month] else "Unknown"
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        // ✅ CORRECTION #4: Annuler les coroutines quand ViewModel est détruit
+        statisticsJobs?.cancel(CancellationException("StatisticsViewModel cleared"))
     }
 }
 
